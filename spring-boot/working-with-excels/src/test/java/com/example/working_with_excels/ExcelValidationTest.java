@@ -1,5 +1,7 @@
 package com.example.working_with_excels;
 
+import com.example.working_with_excels.config.validation.CellValidator;
+import com.example.working_with_excels.config.validation.ExcelConfigLoader;
 import com.example.working_with_excels.config.validation.ExcelValidationReport;
 import com.example.working_with_excels.config.validation.ExcelValidationService;
 import com.example.working_with_excels.config.validation.SheetValidationReport;
@@ -13,7 +15,9 @@ class ExcelValidationTest {
 
     @Test
     void testExcelStructureValidationReport() throws IOException {
-        ExcelValidationService service = new ExcelValidationService();
+        ExcelConfigLoader configLoader = new ExcelConfigLoader();
+        CellValidator cellValidator = new CellValidator();
+        ExcelValidationService service = new ExcelValidationService(configLoader, cellValidator);
 
         ExcelValidationReport report = service.validateExcelStructure("excel_data.xlsx", "excel_data_mapping.yml");
 
