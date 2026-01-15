@@ -37,7 +37,8 @@ public class ExcelValidationService {
 
         // 3. Load Excel File and Calculate Size
         ClassPathResource excelResource = new ClassPathResource(excelFileName);
-        double fileSizeMB = excelResource.contentLength() / (1024.0 * 1024.0);
+        long fileSizeBytes = excelResource.contentLength();
+        String fileSizeFormatted = formatFileSize(fileSizeBytes);
 
         List<SheetValidationReport> sheetReports = new ArrayList<>();
 
@@ -50,7 +51,7 @@ public class ExcelValidationService {
             }
         }
 
-        return new ExcelValidationReport(excelFileName, yamlConfigPath, fileSizeMB, sheetReports);
+        return new ExcelValidationReport(excelFileName, yamlConfigPath, fileSizeFormatted, sheetReports);
     }
 
     private SheetValidationReport validateSheet(Workbook workbook, SheetConfig sheetConfig) {
@@ -134,5 +135,14 @@ public class ExcelValidationService {
             case BOOLEAN -> cell.getCellType() == CellType.BOOLEAN;
             case DATE -> DateUtil.isCellDateFormatted(cell);
         };
+    }
+
+    private String formatFileSize(long bytes) {
+        if (bytes < 1024) {
+            return bytes + " B";
+        }
+        int exp = (int) (Math.log(bytes) / Math.log(1024));
+        String pre = "KMGTPE".charAt(exp - 1) + "";
+        return String.format("%.1f %sB", bytes / Math.pow(1024, exp), pre);
     }
 }

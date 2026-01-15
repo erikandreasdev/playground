@@ -5,6 +5,6 @@ import java.util.List;
 public record ExcelValidationReport(
         String filename,
         String mappingFile,
-        double fileSizeMB,
+        String fileSizeFormatted,
         List<SheetValidationReport> sheets) {
 }
