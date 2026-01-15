@@ -60,3 +60,41 @@ validation:
   min: 1
   max: 1000
 ```
+
+### 4. Allowed Values (Enum)
+**Applies to:** `STRING`, `NUMERIC` (converted to string)
+
+Validates that the value is present in a specific list of allowed values (allowlist).
+
+**Example:**
+```yaml
+validation:
+  allowedValues:
+    - "Active"
+    - "Inactive"
+    - "Pending"
+```
+
+### 5. Excluded Values (blocklist)
+**Applies to:** `STRING`, `NUMERIC` (converted to string)
+
+Validates that the value is NOT present in a specific list of excluded values.
+
+**Example:**
+```yaml
+validation:
+  excludedValues:
+    - "Admin"
+    - "Root"
+```
+
+### 6. Required Value (Not Empty)
+**Applies to:** All types
+
+Enforces that a cell cannot be blank or null.
+
+**Example:**
+```yaml
+validation:
+  notEmpty: true
+```

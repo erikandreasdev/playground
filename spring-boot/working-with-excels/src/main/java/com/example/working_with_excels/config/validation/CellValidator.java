@@ -9,8 +9,15 @@ import org.springframework.stereotype.Component;
 public class CellValidator {
 
     public String validate(Cell cell, ColumnConfig colConfig) {
-        if (cell == null || cell.getCellType() == CellType.BLANK) {
-            return "Missing value at column: " + colConfig.name();
+        // Not Empty Validation
+        boolean isBlank = cell == null || cell.getCellType() == CellType.BLANK;
+        if (colConfig.validation() != null && Boolean.TRUE.equals(colConfig.validation().notEmpty()) && isBlank) {
+            return "Value is required at column: " + colConfig.name();
+        }
+
+        // If blank and not required, skip further validation
+        if (isBlank) {
+            return null;
         }
 
         if (!isValidType(cell, colConfig.type())) {
@@ -78,6 +85,22 @@ public class CellValidator {
             }
             if (validation.max() != null && value > validation.max()) {
                 return "Value " + value + " exceeds max " + validation.max();
+            }
+        }
+
+        // Allowed Values (Enumerated)
+        if (validation.allowedValues() != null && !validation.allowedValues().isEmpty() && stringValue != null) {
+            String val = stringValue; // final for lambda/streams if needed
+            if (!validation.allowedValues().contains(val)) {
+                return "Value '" + val + "' is not in the allowed list: " + validation.allowedValues();
+            }
+        }
+
+        // Excluded Values
+        if (validation.excludedValues() != null && !validation.excludedValues().isEmpty() && stringValue != null) {
+            String val = stringValue;
+            if (validation.excludedValues().contains(val)) {
+                return "Value '" + val + "' is in the excluded list";
             }
         }
 
