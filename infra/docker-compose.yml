@@ -1,0 +1,92 @@
+services:
+  # ---------------------------------------------------------
+  # POSTGRESQL (Profile: postgres)
+  # ---------------------------------------------------------
+  postgres:
+    image: postgres:16-alpine
+    container_name: playground-postgres
+    profiles: ["postgres", "all"]
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=secret
+      - POSTGRES_DB=playground
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # ---------------------------------------------------------
+  # ORACLE DATABASE (Profile: oracle)
+  # ---------------------------------------------------------
+  oracle:
+    image: gvenzl/oracle-free:latest
+    container_name: playground-oracle
+    profiles: ["oracle", "all"]
+    ports:
+      - "1521:1521"
+    environment:
+      - ORACLE_PASSWORD=secret
+      - ORACLE_DATABASE=playground
+    volumes:
+      - oracle_data:/opt/oracle/oradata
+    healthcheck:
+      test: ["CMD", "healthcheck.sh"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ---------------------------------------------------------
+  # MYSQL (Profile: mysql)
+  # ---------------------------------------------------------
+  mysql:
+    image: mysql:8.3
+    container_name: playground-mysql
+    profiles: ["mysql", "all"]
+    ports:
+      - "3306:3306"
+    environment:
+      - MYSQL_ROOT_PASSWORD=secret
+      - MYSQL_DATABASE=playground
+      - MYSQL_USER=user
+      - MYSQL_PASSWORD=secret
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin" ,"ping", "-h", "localhost"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # ---------------------------------------------------------
+  # MARIADB (Profile: mariadb)
+  # Note: Port mapped to 3307 to avoid conflict with MySQL
+  # ---------------------------------------------------------
+  mariadb:
+    image: mariadb:11.2
+    container_name: playground-mariadb
+    profiles: ["mariadb", "all"]
+    ports:
+      - "3307:3306" # Maps Host 3307 -> Container 3306
+    environment:
+      - MARIADB_ROOT_PASSWORD=secret
+      - MARIADB_DATABASE=playground
+      - MARIADB_USER=user
+      - MARIADB_PASSWORD=secret
+    volumes:
+      - mariadb_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  postgres_data:
+  oracle_data:
+  mysql_data:
+  mariadb_data:

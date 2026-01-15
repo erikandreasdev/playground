@@ -1,0 +1,39 @@
+all:
+  desc: Start all services
+  cmds: 
+    - docker compose up -d
+
+stop:
+  desc: Stop all services
+  cmds: 
+    - docker compose down
+
+clean:
+  desc: Stop all services and remove persistence
+  cmds: 
+    - docker compose down --volumes
+
+oracle:
+  desc: Start oracle service
+  cmds: 
+    - docker compose up -d oracle
+
+postgres:
+  desc: Start postgres service
+  cmds: 
+    - docker compose up -d postgres
+
+mysql:
+  desc: Start mysql service
+  cmds: 
+    - docker compose up -d mysql
+
+mariadb:
+  desc: Start mariadb service
+  cmds: 
+    - docker compose up -d mariadb
+
+status:
+  desc: Show status of all services
+  cmds: 
+    - docker compose ps
