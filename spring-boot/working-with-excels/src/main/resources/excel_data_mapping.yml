@@ -35,6 +35,8 @@ files:
         columns:
           - name: "Order Ref"
             type: STRING
+            validation:
+              regex: "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
           - name: "Customer Email"
             type: EMAIL
           - name: "Order Date"
