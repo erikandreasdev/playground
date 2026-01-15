@@ -1,0 +1,45 @@
+files:
+  - filename: "excel_data.xlsx"
+    sheets:
+      - name: "Users"
+        columns:
+          - name: "User ID"
+            type: INTEGER
+          - name: "Full Name"
+            type: STRING
+          - name: "Email Address"
+            type: EMAIL
+          - name: "Birth Date"
+            type: DATE
+          - name: "Is Active"
+            type: BOOLEAN
+          - name: "Account Balance"
+            type: DECIMAL
+
+      - name: "Products"
+        columns:
+          - name: "Product ID"
+            type: INTEGER
+          - name: "Product Name"
+            type: STRING
+          - name: "Description"
+            type: STRING
+          - name: "Price"
+            type: DECIMAL
+          - name: "Category"
+            type: STRING
+          - name: "Stock Count"
+            type: INTEGER
+
+      - name: "Orders"
+        columns:
+          - name: "Order Ref"
+            type: STRING
+          - name: "Customer Email"
+            type: EMAIL
+          - name: "Order Date"
+            type: DATE
+          - name: "Total Amount"
+            type: DECIMAL
+          - name: "Shipped"
+            type: BOOLEAN

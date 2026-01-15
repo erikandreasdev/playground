@@ -26,7 +26,7 @@ import java.util.concurrent.TimeUnit;
 public class ExcelGenerator {
 
     private static final int ROW_COUNT = 50;
-    private static final String FILE_NAME = "generated_test_data.xlsx";
+    private static final String FILE_NAME = "excel_data.xlsx";
 
     public static void main(String[] args) {
         System.out.println("Starting Excel Generation...");
