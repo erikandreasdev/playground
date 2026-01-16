@@ -6,7 +6,7 @@ import java.nio.file.Path;
 
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
+
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -32,34 +32,7 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class ExcelImportController {
 
-        private static final String DEFAULT_EXCEL = "import_data.xlsx";
-        private static final String DEFAULT_CONFIG = "import_mapping.yml";
-
         private final ExcelImportUseCase importUseCase;
-
-        /**
-         * Quick test - DRY_RUN mode with default files.
-         *
-         * <p>
-         * GET /api/import/dry-run
-         */
-        @GetMapping("/dry-run")
-        public ResponseEntity<ImportReport> dryRun() throws IOException {
-                ImportReport report = importUseCase.importExcel(DEFAULT_EXCEL, DEFAULT_CONFIG, ImportMode.DRY_RUN);
-                return ResponseEntity.ok(report);
-        }
-
-        /**
-         * Execute import with default files.
-         *
-         * <p>
-         * POST /api/import/execute
-         */
-        @PostMapping("/execute")
-        public ResponseEntity<ImportReport> execute() throws IOException {
-                ImportReport report = importUseCase.importExcel(DEFAULT_EXCEL, DEFAULT_CONFIG, ImportMode.EXECUTE);
-                return ResponseEntity.ok(report);
-        }
 
         /**
          * Import from classpath resources.
@@ -69,8 +42,8 @@ public class ExcelImportController {
          */
         @PostMapping("/classpath")
         public ResponseEntity<ImportReport> classpathImport(
-                        @RequestParam(value = "excel", defaultValue = DEFAULT_EXCEL) String excelFile,
-                        @RequestParam(value = "config", defaultValue = DEFAULT_CONFIG) String configFile,
+                        @RequestParam(value = "excel") String excelFile,
+                        @RequestParam(value = "config") String configFile,
                         @RequestParam(value = "mode", defaultValue = "DRY_RUN") ImportMode mode) throws IOException {
 
                 ImportReport report = importUseCase.importExcel(
