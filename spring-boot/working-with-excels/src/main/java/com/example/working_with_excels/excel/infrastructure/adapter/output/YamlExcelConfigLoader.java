@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.io.InputStream;
 
 import org.springframework.core.io.ClassPathResource;
+import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Component;
 
 import com.example.working_with_excels.excel.application.port.output.ExcelConfigLoaderPort;
@@ -24,7 +25,7 @@ public class YamlExcelConfigLoader implements ExcelConfigLoaderPort {
     private final ObjectMapper yamlMapper = new ObjectMapper(new YAMLFactory());
 
     @Override
-    public FilesConfig loadConfig(String yamlConfigPath) throws IOException {
+    public FilesConfig loadConfig(@NonNull String yamlConfigPath) throws IOException {
         try (InputStream yamlStream = new ClassPathResource(yamlConfigPath).getInputStream()) {
             return loadConfigFromStream(yamlStream);
         }

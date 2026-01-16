@@ -2,12 +2,15 @@ package com.example.working_with_excels.excel.infrastructure.adapter.output;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.dao.DataAccessException;
+import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
+import org.springframework.jdbc.core.namedparam.SqlParameterSource;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.TransactionStatus;
@@ -54,9 +57,11 @@ public class JdbcDatabaseAdapter implements DatabasePort {
         log.debug("Executing batch insert: {} rows", parameterBatch.size());
 
         try {
-            @SuppressWarnings("unchecked")
-            Map<String, Object>[] batchArray = parameterBatch.toArray(new Map[0]);
-            int[] results = namedJdbcTemplate.batchUpdate(sql, batchArray);
+
+            SqlParameterSource[] batch = parameterBatch.stream()
+                    .map(MapSqlParameterSource::new)
+                    .toArray(SqlParameterSource[]::new);
+            int[] results = namedJdbcTemplate.batchUpdate(Objects.requireNonNull(sql), Objects.requireNonNull(batch));
 
             int totalInserted = 0;
             for (int result : results) {
@@ -71,8 +76,7 @@ public class JdbcDatabaseAdapter implements DatabasePort {
             return totalInserted;
 
         } catch (DataAccessException e) {
-            log.error("Batch insert failed: {}", e.getMessage());
-            throw e;
+            throw new DatabaseAdapterException("Batch insert failed", e);
         }
     }
 
@@ -87,8 +91,8 @@ public class JdbcDatabaseAdapter implements DatabasePort {
         log.debug("Executing lookup: {} WHERE {}={}", table, matchColumn, value);
 
         try {
-            List<Object> results = namedJdbcTemplate.query(sql,
-                    Map.of("value", value),
+            List<Object> results = namedJdbcTemplate.query(Objects.requireNonNull(sql),
+                    new MapSqlParameterSource("value", value),
                     (rs, rowNum) -> rs.getObject(1));
 
             if (results.isEmpty()) {

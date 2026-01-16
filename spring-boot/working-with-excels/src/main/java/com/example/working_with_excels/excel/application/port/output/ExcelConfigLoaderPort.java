@@ -5,6 +5,7 @@ import java.io.InputStream;
 
 import com.example.working_with_excels.excel.domain.model.FileConfig;
 import com.example.working_with_excels.excel.domain.model.FilesConfig;
+import org.springframework.lang.NonNull;
 
 /**
  * Output port for loading Excel configuration from external sources.
@@ -23,7 +24,7 @@ public interface ExcelConfigLoaderPort {
      * @return the parsed configuration
      * @throws IOException if the file cannot be read or parsed
      */
-    FilesConfig loadConfig(String yamlConfigPath) throws IOException;
+    FilesConfig loadConfig(@NonNull String yamlConfigPath) throws IOException;
 
     /**
      * Loads the complete files configuration from an input stream.

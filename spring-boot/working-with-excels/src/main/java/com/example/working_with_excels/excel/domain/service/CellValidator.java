@@ -1,5 +1,7 @@
 package com.example.working_with_excels.excel.domain.service;
 
+import org.hibernate.validator.internal.constraintvalidators.bv.EmailValidator;
+
 import com.example.working_with_excels.excel.domain.model.ColumnConfig;
 import com.example.working_with_excels.excel.domain.model.ColumnValidation;
 import com.example.working_with_excels.excel.domain.model.ExcelColumnType;
@@ -159,7 +161,11 @@ public class CellValidator {
     }
 
     private boolean isValidEmail(String email) {
-        return email != null && email.matches("^[A-Za-z0-9+_.-]+@(.+)$");
+        if (email == null) {
+            return false;
+        }
+        EmailValidator validator = new EmailValidator();
+        return validator.isValid(email, null);
     }
 
     private String getCellTypeDescription(Cell cell) {

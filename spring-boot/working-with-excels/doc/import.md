@@ -116,6 +116,25 @@ validation:
 
 The value `"low"` → transforms to `"LOW"` → validates against allowed list → **passes** ✅
 
+## Handling Duplicates (Upsert)
+
+To prevent duplicate errors and update existing records, define a `primaryKey`.
+
+```yaml
+sheets:
+  - name: "Customers"
+    table: "APP_CUSTOMERS"
+    primaryKey: ["CUSTOMER_ID"]   # <--- Enables Upsert (MERGE)
+    columns:
+      - name: "ID"
+        dbMapping: { dbColumn: "CUSTOMER_ID" }
+```
+
+When `primaryKey` is present, the system generates a `MERGE` statement:
+1.  **Match**: Tries to match an existing row using the primary key columns.
+2.  **Update**: If found, updates all other mapped columns.
+3.  **Insert**: If not found, inserts a new row.
+
 ## YAML Configuration
 
 ```yaml
@@ -166,16 +185,43 @@ files:
 
 ## Database Lookups
 
-Resolve cell values to database IDs during import:
+Resolve cell values to database foreign keys or other values during import.
+
+### Configuration
 
 ```yaml
 dbMapping:
-  dbColumn: "COUNTRY_ID"
+  dbColumn: "COUNTRY_ID"    # The column in the target table to insert into
   lookup:
-    table: "COUNTRIES"
-    matchColumn: "NAME"
-    returnColumn: "ID"
+    table: "COUNTRIES"      # The lookup table to query
+    matchColumn: "NAME"     # The column in lookup table to match against Excel value
+    returnColumn: "ID"      # The column in lookup table to retrieve
 ```
+
+### Process Flow
+
+1. **Extraction**: The cell value is read (e.g., "France").
+2. **Transformation**: Any configured transformations are applied (e.g., UPPERCASE -> "FRANCE").
+3. **Query**: The system executes a query for **every row**:
+   ```sql
+   SELECT ID FROM COUNTRIES WHERE NAME = 'FRANCE'
+   ```
+4. **Resolution**:
+   - **Found**: The returned ID (e.g., `101`) replaces "FRANCE" for insertion.
+   - **Not Found**: A `LOOKUP` error is recorded, and the row is failed/skipped based on error strategy.
+
+### Import Modes Behavior
+
+| Mode | Behavior |
+|------|----------|
+| `EXECUTE` | Performs real SQL `SELECT` queries against the database. |
+| `DRY_RUN` | Logs the SQL query but **does not execute it**. Returns a mock value `[MOCK_ID]` to allow validation to proceed. |
+
+> [!WARNING]
+> **Performance Note (N+1 Queries)**
+> Lookups are strictly real-time and **not cached**.
+> Importing 10,000 rows with 2 lookup columns will result in **20,000 extra database SELECT queries**.
+> For large datasets, ensure your database has indexes on the `matchColumn`.
 
 ## Custom SQL with Named Parameters
 

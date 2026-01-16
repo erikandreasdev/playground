@@ -23,7 +23,19 @@ import com.example.working_with_excels.excel.domain.model.ColumnTransformation;
  */
 public class CellTransformer {
 
+    /** Default padding character for PAD_LEFT and PAD_RIGHT transformations. */
     private static final String DEFAULT_PAD_CHAR = " ";
+
+    /**
+     * Default date format pattern following ISO-8601 standard (e.g., 2026-01-16).
+     */
+    private static final String DEFAULT_DATE_FORMAT = "yyyy-MM-dd";
+
+    /**
+     * Default number format pattern with grouping and two decimal places (e.g.,
+     * 1,234.56).
+     */
+    private static final String DEFAULT_NUMBER_FORMAT = "#,##0.00";
 
     /**
      * Applies a list of transformations to a cell value.
@@ -133,7 +145,7 @@ public class CellTransformer {
         if (cell == null || !DateUtil.isCellDateFormatted(cell)) {
             return "";
         }
-        String dateFormat = format != null ? format : "yyyy-MM-dd";
+        String dateFormat = format != null ? format : DEFAULT_DATE_FORMAT;
         LocalDateTime dateTime = cell.getLocalDateTimeCellValue();
         LocalDate date = dateTime.toLocalDate();
         return date.format(DateTimeFormatter.ofPattern(dateFormat));
@@ -143,7 +155,7 @@ public class CellTransformer {
         if (cell == null || cell.getCellType() != CellType.NUMERIC) {
             return "";
         }
-        String numberFormat = format != null ? format : "#,##0.00";
+        String numberFormat = format != null ? format : DEFAULT_NUMBER_FORMAT;
         DecimalFormat df = new DecimalFormat(numberFormat);
         return df.format(cell.getNumericCellValue());
     }
@@ -180,9 +192,9 @@ public class CellTransformer {
         if (transformation.start() == null) {
             return value;
         }
-        int start = Math.max(0, Math.min(transformation.start(), value.length()));
+        int start = Math.clamp(transformation.start(), 0, value.length());
         int end = transformation.end() != null
-                ? Math.max(start, Math.min(transformation.end(), value.length()))
+                ? Math.clamp(transformation.end(), start, value.length())
                 : value.length();
         return value.substring(start, end);
     }

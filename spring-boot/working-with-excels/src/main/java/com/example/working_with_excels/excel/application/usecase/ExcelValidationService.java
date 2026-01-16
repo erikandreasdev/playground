@@ -11,6 +11,7 @@ import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.core.io.ClassPathResource;
+import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Service;
 
 import com.example.working_with_excels.excel.application.dto.ExcelValidationReport;
@@ -37,11 +38,14 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class ExcelValidationService implements ExcelValidationUseCase {
 
+    /** Number of bytes per unit in file size formatting (1 KB = 1024 bytes). */
+    private static final int BYTES_PER_UNIT = 1024;
+
     private final ExcelConfigLoaderPort configLoader;
     private final CellValidator cellValidator;
 
     @Override
-    public ExcelValidationReport validateExcelStructure(String excelFileName, String yamlConfigPath)
+    public ExcelValidationReport validateExcelStructure(@NonNull String excelFileName, @NonNull String yamlConfigPath)
             throws IOException {
         // 1. Load Config
         FilesConfig filesConfig = configLoader.loadConfig(yamlConfigPath);
@@ -127,11 +131,11 @@ public class ExcelValidationService implements ExcelValidationUseCase {
     }
 
     private String formatFileSize(long bytes) {
-        if (bytes < 1024) {
+        if (bytes < BYTES_PER_UNIT) {
             return bytes + " B";
         }
-        int exp = (int) (Math.log(bytes) / Math.log(1024));
+        int exp = (int) (Math.log(bytes) / Math.log(BYTES_PER_UNIT));
         String pre = "KMGTPE".charAt(exp - 1) + "";
-        return String.format("%.1f %sB", bytes / Math.pow(1024, exp), pre);
+        return String.format("%.1f %sB", bytes / Math.pow(BYTES_PER_UNIT, exp), pre);
     }
 }

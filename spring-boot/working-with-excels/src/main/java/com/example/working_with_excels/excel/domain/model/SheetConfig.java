@@ -22,7 +22,8 @@ public record SheetConfig(
         String table,
         ErrorStrategy onError,
         Integer batchSize,
-        String customSql) {
+        String customSql,
+        List<String> primaryKey) {
 
     /** Default batch size for database inserts. */
     public static final int DEFAULT_BATCH_SIZE = 100;
@@ -52,5 +53,23 @@ public record SheetConfig(
      */
     public boolean hasCustomSql() {
         return customSql != null && !customSql.isBlank();
+    }
+
+    /**
+     * Checks if this sheet has a primary key configured.
+     *
+     * @return true if primary key is provided
+     */
+    public boolean hasPrimaryKey() {
+        return primaryKey != null && !primaryKey.isEmpty();
+    }
+
+    /**
+     * Gets the primary key columns, returning empty list if null.
+     *
+     * @return the primary key columns or empty list
+     */
+    public List<String> getEffectivePrimaryKey() {
+        return primaryKey != null ? primaryKey : List.of();
     }
 }

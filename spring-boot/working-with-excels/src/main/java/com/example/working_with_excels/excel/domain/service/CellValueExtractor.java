@@ -44,9 +44,19 @@ public class CellValueExtractor {
                     ? cell.getNumericCellValue()
                     : null;
             case BOOLEAN -> cell.getCellType() == CellType.BOOLEAN
-                    ? (cell.getBooleanCellValue() ? 1 : 0)
+                    ? convertBooleanToInt(cell.getBooleanCellValue())
                     : null;
             case STRING, EMAIL -> cellTransformer.transform(cell, colConfig.transformations());
         };
+    }
+
+    /**
+     * Converts a boolean value to its integer representation.
+     *
+     * @param value the boolean value to convert
+     * @return 1 if true, 0 if false
+     */
+    private int convertBooleanToInt(boolean value) {
+        return value ? 1 : 0;
     }
 }

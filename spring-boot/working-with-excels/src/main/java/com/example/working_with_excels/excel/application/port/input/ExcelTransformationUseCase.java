@@ -3,6 +3,7 @@ package com.example.working_with_excels.excel.application.port.input;
 import java.io.IOException;
 
 import com.example.working_with_excels.excel.application.dto.ExcelTransformationResult;
+import org.springframework.lang.NonNull;
 
 /**
  * Input port defining the use case for Excel transformation operations.
@@ -29,6 +30,6 @@ public interface ExcelTransformationUseCase {
      * @return a complete transformation result containing all transformed values
      * @throws IOException if the Excel file or configuration cannot be read
      */
-    ExcelTransformationResult transformExcel(String excelFileName, String yamlConfigPath)
+    ExcelTransformationResult transformExcel(@NonNull String excelFileName, @NonNull String yamlConfigPath)
             throws IOException;
 }

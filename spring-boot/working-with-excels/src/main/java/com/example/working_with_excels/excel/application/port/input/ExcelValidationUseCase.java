@@ -3,6 +3,7 @@ package com.example.working_with_excels.excel.application.port.input;
 import java.io.IOException;
 
 import com.example.working_with_excels.excel.application.dto.ExcelValidationReport;
+import org.springframework.lang.NonNull;
 
 /**
  * Input port defining the use case for Excel validation operations.
@@ -25,6 +26,6 @@ public interface ExcelValidationUseCase {
      * @return a comprehensive validation report containing results for all sheets
      * @throws IOException if the Excel file or configuration cannot be read
      */
-    ExcelValidationReport validateExcelStructure(String excelFileName, String yamlConfigPath)
+    ExcelValidationReport validateExcelStructure(@NonNull String excelFileName, @NonNull String yamlConfigPath)
             throws IOException;
 }

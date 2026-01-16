@@ -13,6 +13,7 @@ import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.core.io.ClassPathResource;
+import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Service;
 
 import com.example.working_with_excels.excel.application.dto.ExcelTransformationResult;
@@ -44,7 +45,7 @@ public class ExcelTransformationService implements ExcelTransformationUseCase {
     private final CellTransformer cellTransformer;
 
     @Override
-    public ExcelTransformationResult transformExcel(String excelFileName, String yamlConfigPath)
+    public ExcelTransformationResult transformExcel(@NonNull String excelFileName, @NonNull String yamlConfigPath)
             throws IOException {
         // 1. Load Config
         FilesConfig filesConfig = configLoader.loadConfig(yamlConfigPath);
