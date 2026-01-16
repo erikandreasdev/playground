@@ -14,7 +14,8 @@ import java.util.Map;
 public record RowProcessingResult(
         boolean isValid,
         Map<String, Object> namedParams,
-        List<ImportError> errors) {
+        List<ImportError> errors,
+        boolean skipped) {
 
     /**
      * Creates a successful processing result with the extracted parameters.
@@ -23,7 +24,16 @@ public record RowProcessingResult(
      * @return a valid RowProcessingResult
      */
     public static RowProcessingResult valid(Map<String, Object> params) {
-        return new RowProcessingResult(true, params, List.of());
+        return new RowProcessingResult(true, params, List.of(), false);
+    }
+
+    /**
+     * Creates a successful but skipped processing result.
+     *
+     * @return a skipped RowProcessingResult
+     */
+    public static RowProcessingResult ofSkipped() {
+        return new RowProcessingResult(true, Map.of(), List.of(), true);
     }
 
     /**
@@ -33,6 +43,6 @@ public record RowProcessingResult(
      * @return an invalid RowProcessingResult
      */
     public static RowProcessingResult invalid(List<ImportError> errors) {
-        return new RowProcessingResult(false, null, errors);
+        return new RowProcessingResult(false, null, errors, false);
     }
 }

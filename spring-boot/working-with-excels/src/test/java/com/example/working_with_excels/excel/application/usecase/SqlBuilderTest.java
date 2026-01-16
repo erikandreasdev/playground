@@ -36,11 +36,11 @@ class SqlBuilderTest {
                         // Arrange
                         List<ColumnConfig> columns = List.of(
                                         new ColumnConfig("Name", ExcelColumnType.STRING, null, null,
-                                                        DbColumnMapping.of("user_name")),
+                                                        DbColumnMapping.of("user_name"), null, null),
                                         new ColumnConfig("Email", ExcelColumnType.EMAIL, null, null,
-                                                        DbColumnMapping.of("email_address")),
+                                                        DbColumnMapping.of("email_address"), null, null),
                                         new ColumnConfig("Age", ExcelColumnType.INTEGER, null, null,
-                                                        DbColumnMapping.of("age")));
+                                                        DbColumnMapping.of("age"), null, null));
 
                         SheetConfig sheetConfig = new SheetConfig("Users", columns, "APP_USERS",
                                         null, null, null, null);
@@ -59,11 +59,11 @@ class SqlBuilderTest {
                         // Arrange
                         List<ColumnConfig> columns = List.of(
                                         new ColumnConfig("Name", ExcelColumnType.STRING, null, null,
-                                                        DbColumnMapping.of("user_name")),
-                                        new ColumnConfig("Notes", ExcelColumnType.STRING, null, null, null), // No
-                                                                                                             // mapping
+                                                        DbColumnMapping.of("user_name"), null, null),
+                                        new ColumnConfig("Notes", ExcelColumnType.STRING, null, null, null, null, null), // No
+                                                                                                                         // mapping
                                         new ColumnConfig("Email", ExcelColumnType.EMAIL, null, null,
-                                                        DbColumnMapping.of("email")));
+                                                        DbColumnMapping.of("email"), null, null));
 
                         SheetConfig sheetConfig = new SheetConfig("Users", columns, "APP_USERS",
                                         null, null, null, null);
@@ -82,7 +82,7 @@ class SqlBuilderTest {
                         // Arrange
                         List<ColumnConfig> columns = List.of(
                                         new ColumnConfig("ID", ExcelColumnType.INTEGER, null, null,
-                                                        DbColumnMapping.of("id")));
+                                                        DbColumnMapping.of("id"), null, null));
 
                         SheetConfig sheetConfig = new SheetConfig("Data", columns, "SIMPLE_TABLE",
                                         null, null, null, null);
@@ -99,7 +99,8 @@ class SqlBuilderTest {
                 void shouldHandleNoMappedColumns() {
                         // Arrange
                         List<ColumnConfig> columns = List.of(
-                                        new ColumnConfig("Notes", ExcelColumnType.STRING, null, null, null));
+                                        new ColumnConfig("Notes", ExcelColumnType.STRING, null, null, null, null,
+                                                        null));
 
                         SheetConfig sheetConfig = new SheetConfig("Data", columns, "TABLE",
                                         null, null, null, null);
@@ -117,9 +118,9 @@ class SqlBuilderTest {
                         // Arrange
                         List<ColumnConfig> columns = List.of(
                                         new ColumnConfig("ID", ExcelColumnType.INTEGER, null, null,
-                                                        DbColumnMapping.of("id")),
+                                                        DbColumnMapping.of("id"), null, null),
                                         new ColumnConfig("Name", ExcelColumnType.STRING, null, null,
-                                                        DbColumnMapping.of("name")));
+                                                        DbColumnMapping.of("name"), null, null));
 
                         SheetConfig sheetConfig = new SheetConfig("Users", columns, "APP_USERS",
                                         null, null, null, List.of("id"));

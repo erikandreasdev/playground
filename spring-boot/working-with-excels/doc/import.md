@@ -175,6 +175,28 @@ files:
 > **Only columns with `dbMapping` are included in the SQL query.**
 > Columns without `dbMapping` are processed (validated, transformed) but NOT inserted.
 
+## Conditional Row Skipping
+
+You can configure rows to be silently skipped based on specific cell values using `skipIf`. This is useful for ignoring empty rows or rows with specific status flags (e.g., "Inactive").
+
+```yaml
+columns:
+  - name: "Status"
+    type: STRING
+    skipIf: ["Inactive", "Suspended", "None", "null"]   # Matches string values
+    dbMapping: { dbColumn: "STATUS" }
+
+  - name: "Age"
+    type: INTEGER
+    skipIf: [-1, 0]                                     # Matches numeric values
+    dbMapping: { dbColumn: "AGE" }
+```
+
+**Behavior:**
+*   If the cell value matches ANY value in `skipIf`, the **entire row** is skipped.
+*   Skipped rows are counted in the import report but do **not** trigger validation errors or database inserts.
+*   Unmapped columns can also have `skipIf` rules to filter rows based on data you don't intend to import.
+
 ## Error Strategies
 
 | Strategy | Behavior |

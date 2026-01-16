@@ -21,6 +21,11 @@ files:
             validation:
               notEmpty: true
               min: 1
+          - name: "Status"
+            type: STRING
+            skipIf: ["Inactive"]      # Optional: Skip row if value matches
+            dbMapping:
+              dbColumn: "STATUS"
 ```
 
 ## Data Types (`type`)
@@ -139,4 +144,39 @@ files:
               dateFormat: "MM/dd/yyyy"
             dbMapping:
               dbColumn: "LAUNCH_DATE"
+
+          - name: "Discontinued"
+            type: STRING
+            skipIf: ["Yes", "true"]
+
 ```
+
+## Dynamic Skip Expressions (SpEL)
+
+Use `skipExpression` for complex conditions. Operations are performed safely on `#root` (the cell value) and a helper `#dateTime`.
+
+### ✅ Supported Expressions
+
+| Logic | Example | Description |
+| :--- | :--- | :--- |
+| **Comparisons** | `#root > 100` | `>`, `<`, `==`, `!=`, `<=`, `>=` |
+| **Boolean Logic** | `#root > 10 && #root < 50` | `&&`, `||`, `!` |
+| **String Methods** | `#root.startsWith('TEST')` | `contains`, `isEmpty`, `length()` etc. |
+| **Dates** | `#root.isAfter(#dateTime.now())` | Check if date is in future |
+| **Null Checks** | `#root == null` | Check if empty |
+| **Math** | `#root * 2 > 50` | Basic arithmetic |
+| **Safe Nav** | `#root?.length() > 5` | Avoid NPE with `?.` |
+
+### ❌ Blocked (Security)
+*   No **static methods**: `T(java.lang.Math)` ⛔
+*   No **constructors**: `new java.util.Date()` ⛔
+*   No **bean references**: `@userService` ⛔
+*   No **assignments**: `#root = 'val'` ⛔
+
+### Available Variables
+*   `#root`: Current cell value.
+*   `#dateTime`: Date utility helper.
+    *   `now()` (LocalDate)
+    *   `nowTs()` (LocalDateTime)
+    *   `today()` (java.util.Date)
+    *   `year()` (int)

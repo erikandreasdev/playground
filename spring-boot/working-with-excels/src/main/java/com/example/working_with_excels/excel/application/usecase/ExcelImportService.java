@@ -159,6 +159,11 @@ public class ExcelImportService implements ExcelImportUseCase {
 
                 RowProcessingResult result = rowProcessor.processRow(row, rowIdx + 1, sheetConfig.columns());
 
+                if (result.skipped()) {
+                    skippedRows++;
+                    continue;
+                }
+
                 if (!result.isValid()) {
                     errors.addAll(result.errors());
                     skippedRows++;

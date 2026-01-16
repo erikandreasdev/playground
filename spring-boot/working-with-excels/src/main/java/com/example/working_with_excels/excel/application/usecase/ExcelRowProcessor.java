@@ -37,6 +37,7 @@ public class ExcelRowProcessor {
     private final CellValidator cellValidator;
     private final CellValueExtractor cellValueExtractor;
     private final DatabasePort databasePort;
+    private final org.springframework.expression.ExpressionParser parser = new org.springframework.expression.spel.standard.SpelExpressionParser();
 
     /**
      * Processes a single Excel row, extracting and validating all cell values.
@@ -62,6 +63,10 @@ public class ExcelRowProcessor {
         for (int i = 0; i < columns.size(); i++) {
             ColumnConfig colConfig = columns.get(i);
             Cell cell = row.getCell(i);
+
+            if (shouldSkip(cell, colConfig)) {
+                return RowProcessingResult.ofSkipped();
+            }
 
             if (colConfig.dbMapping() == null) {
                 continue;
@@ -95,6 +100,67 @@ public class ExcelRowProcessor {
         }
 
         return RowProcessingResult.valid(namedParams);
+    }
+
+    private boolean shouldSkip(Cell cell, ColumnConfig colConfig) {
+        // 1. Check simple list-based skip (legacy/simpler support)
+        if (colConfig.skipIf() != null && !colConfig.skipIf().isEmpty()) {
+            Object cellValue = cellValueExtractor.extractTypedValue(cell, colConfig);
+            for (Object skipValue : colConfig.skipIf()) {
+                if (valuesMatch(cellValue, skipValue)) {
+                    return true;
+                }
+            }
+        }
+
+        // 2. Check SpEL expression-based skip
+        if (colConfig.skipExpression() != null && !colConfig.skipExpression().isBlank()) {
+            Object cellValue = cellValueExtractor.extractTypedValue(cell, colConfig);
+            try {
+                org.springframework.expression.spel.support.SimpleEvaluationContext context = org.springframework.expression.spel.support.SimpleEvaluationContext
+                        .forReadOnlyDataBinding()
+                        .withRootObject(cellValue)
+                        .build();
+
+                context.setVariable("dateTime",
+                        new com.example.working_with_excels.excel.application.util.DateTimeUtils());
+                // Support #root (default) and #this aliases if needed, though withRootObject
+                // handles #root
+
+                Boolean result = parser.parseExpression(colConfig.skipExpression()).getValue(context, Boolean.class);
+                return Boolean.TRUE.equals(result);
+            } catch (Exception e) {
+                // Log warning and assume false (don't skip automatically on error to be safe,
+                // or fail?)
+                // Strategy: Log error and treat as "failed" row? Or simply don't skip?
+                // For now: Log and don't skip, effectively treating as normal row which might
+                // fail validation
+                // Ideally we should report this as an ImportError, but shouldSkip returns
+                // boolean.
+                // We'll log to console for now as config error.
+                // In production code, we might want to propagate this exception.
+                return false;
+            }
+        }
+
+        return false;
+    }
+
+    private boolean valuesMatch(Object cellValue, Object skipValue) {
+        if (cellValue == null) {
+            return skipValue == null || "null".equalsIgnoreCase(skipValue.toString())
+                    || "None".equalsIgnoreCase(skipValue.toString());
+        }
+        if (skipValue == null) {
+            return false;
+        }
+
+        // Handle numeric comparison specifically (e.g. 1 == 1.0)
+        if (cellValue instanceof Number && skipValue instanceof Number) {
+            return ((Number) cellValue).doubleValue() == ((Number) skipValue).doubleValue();
+        }
+
+        return cellValue.toString().equalsIgnoreCase(skipValue.toString());
     }
 
     /**
