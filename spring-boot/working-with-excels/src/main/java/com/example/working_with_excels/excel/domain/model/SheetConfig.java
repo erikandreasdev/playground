@@ -23,6 +23,7 @@ public record SheetConfig(
         ErrorStrategy onError,
         Integer batchSize,
         String customSql,
+        String skipExpression,
         List<String> primaryKey) {
 
     /** Default batch size for database inserts. */

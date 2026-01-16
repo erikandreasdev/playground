@@ -8,6 +8,7 @@ import java.util.Optional;
 
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.Row;
+import org.springframework.expression.spel.support.StandardEvaluationContext;
 import org.springframework.stereotype.Service;
 
 import com.example.working_with_excels.excel.application.dto.ImportError;
@@ -56,7 +57,36 @@ public class ExcelRowProcessor {
      * @param columns   the list of column configurations
      * @return the processing result containing either named parameters or errors
      */
-    public RowProcessingResult processRow(Row row, int rowNumber, List<ColumnConfig> columns) {
+    /**
+     * Processes a single Excel row, extracting and validating all cell values.
+     *
+     * <p>
+     * For each column with a database mapping, this method:
+     * <ol>
+     * <li>Did we skip the row?</li>
+     * <li>Validates the raw cell value</li>
+     * <li>Extracts the typed value with transformations</li>
+     * <li>Validates the transformed value</li>
+     * <li>Resolves any lookup references</li>
+     * </ol>
+     *
+     * @param row         the Excel row to process
+     * @param rowNumber   the 1-indexed row number (for error reporting)
+     * @param sheetConfig the sheet configuration
+     * @return the processing result containing either named parameters or errors
+     */
+    public RowProcessingResult processRow(Row row, int rowNumber,
+            com.example.working_with_excels.excel.domain.model.SheetConfig sheetConfig) {
+        List<ColumnConfig> columns = sheetConfig.columns();
+
+        // 1. Pre-extract values for row-level skip evaluation
+        Map<String, Object> rowValues = extractRowValues(row, columns);
+
+        // 2. Check Sheet-level SpEL skip expression
+        if (evaluateSheetSkip(sheetConfig, rowValues)) {
+            return RowProcessingResult.ofSkipped();
+        }
+
         List<ImportError> errors = new ArrayList<>();
         Map<String, Object> namedParams = new HashMap<>();
 
@@ -64,7 +94,8 @@ public class ExcelRowProcessor {
             ColumnConfig colConfig = columns.get(i);
             Cell cell = row.getCell(i);
 
-            if (shouldSkip(cell, colConfig)) {
+            // Column-level skip (legacy/specific)
+            if (shouldSkipColumn(cell, colConfig)) {
                 return RowProcessingResult.ofSkipped();
             }
 
@@ -78,7 +109,7 @@ public class ExcelRowProcessor {
                 continue;
             }
 
-            Object cellValue = cellValueExtractor.extractTypedValue(cell, colConfig);
+            Object cellValue = rowValues.get(colConfig.name());
 
             String transformedValidationError = cellValidator.validateTransformedValue(cellValue, colConfig);
             if (transformedValidationError != null) {
@@ -88,7 +119,6 @@ public class ExcelRowProcessor {
 
             Object finalValue = resolveLookup(cellValue, colConfig.dbMapping(), rowNumber, colConfig.name(), errors);
             if (finalValue == null && colConfig.dbMapping().lookup() != null) {
-                // Lookup failed and error was added
                 continue;
             }
 
@@ -102,8 +132,43 @@ public class ExcelRowProcessor {
         return RowProcessingResult.valid(namedParams);
     }
 
-    private boolean shouldSkip(Cell cell, ColumnConfig colConfig) {
-        // 1. Check simple list-based skip (legacy/simpler support)
+    private Map<String, Object> extractRowValues(Row row, List<ColumnConfig> columns) {
+        Map<String, Object> rowValues = new HashMap<>();
+        for (int i = 0; i < columns.size(); i++) {
+            ColumnConfig colConfig = columns.get(i);
+            Cell cell = row.getCell(i);
+            Object val = cellValueExtractor.extractTypedValue(cell, colConfig);
+            rowValues.put(colConfig.name(), val);
+        }
+        return rowValues;
+    }
+
+    private boolean evaluateSheetSkip(com.example.working_with_excels.excel.domain.model.SheetConfig sheetConfig,
+            Map<String, Object> rowValues) {
+        if (sheetConfig.skipExpression() != null && !sheetConfig.skipExpression().isBlank()) {
+            try {
+                StandardEvaluationContext context = new StandardEvaluationContext();
+                context.setRootObject(rowValues);
+
+                context.setVariable("dateTime",
+                        new com.example.working_with_excels.excel.application.util.DateTimeUtils());
+                context.setVariable("db", new DbHelper(databasePort));
+
+                // Add column values as variables for easier access (e.g. #ColName)
+                rowValues.forEach(context::setVariable);
+
+                Boolean result = parser.parseExpression(sheetConfig.skipExpression()).getValue(context, Boolean.class);
+                return Boolean.TRUE.equals(result);
+            } catch (Exception e) {
+                // Log and proceed (don't skip on error, safe default)
+                return false;
+            }
+        }
+        return false;
+    }
+
+    private boolean shouldSkipColumn(Cell cell, ColumnConfig colConfig) {
+        // 1. Check simple list-based skip
         if (colConfig.skipIf() != null && !colConfig.skipIf().isEmpty()) {
             Object cellValue = cellValueExtractor.extractTypedValue(cell, colConfig);
             for (Object skipValue : colConfig.skipIf()) {
@@ -113,37 +178,41 @@ public class ExcelRowProcessor {
             }
         }
 
-        // 2. Check SpEL expression-based skip
+        // 2. Check SpEL expression-based skip (column context)
         if (colConfig.skipExpression() != null && !colConfig.skipExpression().isBlank()) {
             Object cellValue = cellValueExtractor.extractTypedValue(cell, colConfig);
             try {
-                org.springframework.expression.spel.support.SimpleEvaluationContext context = org.springframework.expression.spel.support.SimpleEvaluationContext
-                        .forReadOnlyDataBinding()
-                        .withRootObject(cellValue)
-                        .build();
+                StandardEvaluationContext context = new StandardEvaluationContext();
+                context.setRootObject(cellValue);
 
                 context.setVariable("dateTime",
                         new com.example.working_with_excels.excel.application.util.DateTimeUtils());
-                // Support #root (default) and #this aliases if needed, though withRootObject
-                // handles #root
 
                 Boolean result = parser.parseExpression(colConfig.skipExpression()).getValue(context, Boolean.class);
                 return Boolean.TRUE.equals(result);
             } catch (Exception e) {
-                // Log warning and assume false (don't skip automatically on error to be safe,
-                // or fail?)
-                // Strategy: Log error and treat as "failed" row? Or simply don't skip?
-                // For now: Log and don't skip, effectively treating as normal row which might
-                // fail validation
-                // Ideally we should report this as an ImportError, but shouldSkip returns
-                // boolean.
-                // We'll log to console for now as config error.
-                // In production code, we might want to propagate this exception.
                 return false;
             }
         }
-
         return false;
+    }
+
+    public static class DbHelper {
+        private final DatabasePort db;
+
+        public DbHelper(DatabasePort db) {
+            this.db = db;
+        }
+
+        public boolean exists(String table, String column, Object value) {
+            if (value == null)
+                return false;
+            return db.lookup(table, column, value, column).isPresent();
+        }
+
+        public Object lookup(String table, String column, Object value, String returnCol) {
+            return db.lookup(table, column, value, returnCol).orElse(null);
+        }
     }
 
     private boolean valuesMatch(Object cellValue, Object skipValue) {

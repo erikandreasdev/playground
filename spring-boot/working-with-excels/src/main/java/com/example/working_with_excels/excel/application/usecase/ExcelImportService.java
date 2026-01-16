@@ -157,7 +157,7 @@ public class ExcelImportService implements ExcelImportUseCase {
 
                 progressTracker.trackProgress(totalRows, lastRowNum, sheetConfig.name());
 
-                RowProcessingResult result = rowProcessor.processRow(row, rowIdx + 1, sheetConfig.columns());
+                RowProcessingResult result = rowProcessor.processRow(row, rowIdx + 1, sheetConfig);
 
                 if (result.skipped()) {
                     skippedRows++;

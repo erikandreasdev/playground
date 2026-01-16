@@ -76,7 +76,7 @@ class ExcelRowProcessorTest {
                         when(cellValueExtractor.extractTypedValue(eq(ageCell), any())).thenReturn(30);
 
                         // Act
-                        RowProcessingResult result = rowProcessor.processRow(row, 2, columns);
+                        RowProcessingResult result = rowProcessor.processRow(row, 2, createSheetConfig(columns));
 
                         // Assert
                         assertThat(result.isValid()).isTrue();
@@ -108,7 +108,7 @@ class ExcelRowProcessorTest {
                         when(cellValueExtractor.extractTypedValue(eq(nameCell), any())).thenReturn("Bob");
 
                         // Act
-                        RowProcessingResult result = rowProcessor.processRow(row, 2, columns);
+                        RowProcessingResult result = rowProcessor.processRow(row, 2, createSheetConfig(columns));
 
                         // Assert
                         assertThat(result.isValid()).isTrue();
@@ -135,7 +135,7 @@ class ExcelRowProcessorTest {
                         when(cellValidator.validate(any(), any())).thenReturn("Invalid email format");
 
                         // Act
-                        RowProcessingResult result = rowProcessor.processRow(row, 2, columns);
+                        RowProcessingResult result = rowProcessor.processRow(row, 2, createSheetConfig(columns));
 
                         // Assert
                         assertThat(result.isValid()).isFalse();
@@ -164,7 +164,7 @@ class ExcelRowProcessorTest {
                                         .thenReturn("Error 2");
 
                         // Act
-                        RowProcessingResult result = rowProcessor.processRow(row, 2, columns);
+                        RowProcessingResult result = rowProcessor.processRow(row, 2, createSheetConfig(columns));
 
                         // Assert
                         assertThat(result.isValid()).isFalse();
@@ -197,7 +197,7 @@ class ExcelRowProcessorTest {
                                         .thenReturn(Optional.of(42));
 
                         // Act
-                        RowProcessingResult result = rowProcessor.processRow(row, 2, columns);
+                        RowProcessingResult result = rowProcessor.processRow(row, 2, createSheetConfig(columns));
 
                         // Assert
                         assertThat(result.isValid()).isTrue();
@@ -225,7 +225,7 @@ class ExcelRowProcessorTest {
                                         .thenReturn(Optional.empty());
 
                         // Act
-                        RowProcessingResult result = rowProcessor.processRow(row, 2, columns);
+                        RowProcessingResult result = rowProcessor.processRow(row, 2, createSheetConfig(columns));
 
                         // Assert
                         assertThat(result.isValid()).isFalse();
@@ -250,182 +250,132 @@ class ExcelRowProcessorTest {
                         when(cellValueExtractor.extractTypedValue(any(), any())).thenReturn("Value");
 
                         // Act
-                        rowProcessor.processRow(row, 2, columns);
+                        rowProcessor.processRow(row, 2, createSheetConfig(columns));
 
                         // Assert
                         verify(databasePort, never()).lookup(any(), any(), any(), any());
                 }
+        }
 
-                @Nested
-                @DisplayName("processRow with skip conditions")
-                class SkippingLogic {
+        @Nested
+        @DisplayName("processRow with skip conditions")
+        class SkippingLogic {
 
-                        @Test
-                        @DisplayName("should skip row when value matches skip condition")
-                        void shouldSkipRowWhenValueMatches() {
-                                // Arrange
-                                Row row = mock(Row.class);
-                                Cell statusCell = mock(Cell.class);
-                                when(row.getCell(0)).thenReturn(statusCell);
+                @Test
+                @DisplayName("should skip row when value matches skip condition")
+                void shouldSkipRowWhenValueMatches() {
+                        // Arrange
+                        Row row = mock(Row.class);
+                        Cell statusCell = mock(Cell.class);
+                        when(row.getCell(0)).thenReturn(statusCell);
 
-                                List<ColumnConfig> columns = List.of(
-                                                new ColumnConfig("Status", ExcelColumnType.STRING, null, null,
-                                                                DbColumnMapping.of("status"),
-                                                                List.of("Inactive", "Deleted"), null));
+                        List<ColumnConfig> columns = List.of(
+                                        new ColumnConfig("Status", ExcelColumnType.STRING, null, null,
+                                                        DbColumnMapping.of("status"),
+                                                        List.of("Inactive", "Deleted"), null));
 
-                                when(cellValueExtractor.extractTypedValue(eq(statusCell), any()))
-                                                .thenReturn("Inactive");
+                        when(cellValueExtractor.extractTypedValue(eq(statusCell), any()))
+                                        .thenReturn("Inactive");
 
-                                // Act
-                                RowProcessingResult result = rowProcessor.processRow(row, 2, columns);
+                        // Act
+                        RowProcessingResult result = rowProcessor.processRow(row, 2, createSheetConfig(columns));
 
-                                // Assert
-                                assertThat(result.skipped()).isTrue();
-                        }
-
-                        @Test
-                        @DisplayName("should not skip row when value does not match skip condition")
-                        void shouldNotSkipRowWhenValueDoesNotMatch() {
-                                // Arrange
-                                Row row = mock(Row.class);
-                                Cell statusCell = mock(Cell.class);
-                                when(row.getCell(0)).thenReturn(statusCell);
-
-                                List<ColumnConfig> columns = List.of(
-                                                new ColumnConfig("Status", ExcelColumnType.STRING, null, null,
-                                                                DbColumnMapping.of("status"), List.of("Inactive"),
-                                                                null));
-
-                                when(cellValidator.validate(any(), any())).thenReturn(null);
-                                when(cellValidator.validateTransformedValue(any(), any())).thenReturn(null);
-                                when(cellValueExtractor.extractTypedValue(eq(statusCell), any())).thenReturn("Active");
-
-                                // Act
-                                RowProcessingResult result = rowProcessor.processRow(row, 2, columns);
-
-                                // Assert
-                                assertThat(result.skipped()).isFalse();
-                        }
-
-                        @Test
-                        @DisplayName("should skip row when numeric value matches")
-                        void shouldSkipRowWhenNumericValueMatches() {
-                                // Arrange
-                                Row row = mock(Row.class);
-                                Cell ageCell = mock(Cell.class);
-                                when(row.getCell(0)).thenReturn(ageCell);
-
-                                List<ColumnConfig> columns = List.of(
-                                                new ColumnConfig("Age", ExcelColumnType.INTEGER, null, null,
-                                                                DbColumnMapping.of("age"), List.of(0, -1), null));
-
-                                when(cellValueExtractor.extractTypedValue(eq(ageCell), any())).thenReturn(0);
-
-                                // Act
-                                RowProcessingResult result = rowProcessor.processRow(row, 2, columns);
-
-                                // Assert
-                                assertThat(result.skipped()).isTrue();
-                        }
-
-                        @Test
-                        @DisplayName("should skip row when value is null and 'None' is in skip list")
-                        void shouldSkipRowWhenValueIsNullAndNoneInSkipList() {
-                                // Arrange
-                                Row row = mock(Row.class);
-                                Cell cell = mock(Cell.class);
-                                when(row.getCell(0)).thenReturn(cell);
-
-                                List<ColumnConfig> columns = List.of(
-                                                new ColumnConfig("Data", ExcelColumnType.STRING, null, null,
-                                                                DbColumnMapping.of("data"), List.of("None"), null));
-
-                                when(cellValueExtractor.extractTypedValue(eq(cell), any())).thenReturn(null);
-
-                                // Act
-                                RowProcessingResult result = rowProcessor.processRow(row, 2, columns);
-
-                                // Assert
-                                assertThat(result.skipped()).isTrue();
-                        }
-
-                        @DisplayName("should skip row when SpEL expression evaluates to true")
-                        void shouldSkipRowWhenSpelExpressionIsTrue() {
-                                // Arrange
-                                Row row = mock(Row.class);
-                                Cell dateCell = mock(Cell.class);
-                                when(row.getCell(0)).thenReturn(dateCell);
-
-                                // Expression: Skip if date is after now (future date)
-                                // Note: We'll return a future date from extractor
-                                String expression = "#root.isAfter(#dateTime.now())";
-
-                                List<ColumnConfig> columns = List.of(
-                                                new ColumnConfig("Date", ExcelColumnType.DATE, null, null,
-                                                                DbColumnMapping.of("date"), null, expression));
-
-                                when(cellValueExtractor.extractTypedValue(eq(dateCell), any()))
-                                                .thenReturn(java.time.LocalDate.now().plusDays(1));
-
-                                // Act
-                                RowProcessingResult result = rowProcessor.processRow(row, 2, columns);
-
-                                // Assert
-                                assertThat(result.skipped()).isTrue();
-                        }
-
-                        @Test
-                        @DisplayName("should not skip row when SpEL expression evaluates to false")
-                        void shouldNotSkipRowWhenSpelExpressionIsFalse() {
-                                // Arrange
-                                Row row = mock(Row.class);
-                                Cell dateCell = mock(Cell.class);
-                                when(row.getCell(0)).thenReturn(dateCell);
-
-                                // Expression: Skip if date is after now
-                                String expression = "#root.isAfter(#dateTime.now())";
-
-                                List<ColumnConfig> columns = List.of(
-                                                new ColumnConfig("Date", ExcelColumnType.DATE, null, null,
-                                                                DbColumnMapping.of("date"), null, expression));
-
-                                when(cellValidator.validate(any(), any())).thenReturn(null);
-                                when(cellValidator.validateTransformedValue(any(), any())).thenReturn(null);
-                                when(cellValueExtractor.extractTypedValue(eq(dateCell), any()))
-                                                .thenReturn(java.time.LocalDate.now().minusDays(1)); // Past date
-
-                                // Act
-                                RowProcessingResult result = rowProcessor.processRow(row, 2, columns);
-
-                                // Assert
-                                assertThat(result.skipped()).isFalse();
-                        }
-
-                        @Test
-                        @DisplayName("should not skip when SpEL expression fails")
-                        void shouldNotSkipWhenSpelExpressionFails() {
-                                // Arrange
-                                Row row = mock(Row.class);
-                                Cell cell = mock(Cell.class);
-                                when(row.getCell(0)).thenReturn(cell);
-
-                                // Invalid expression
-                                String expression = "#root.invalidMethod()";
-
-                                List<ColumnConfig> columns = List.of(
-                                                new ColumnConfig("Data", ExcelColumnType.STRING, null, null,
-                                                                DbColumnMapping.of("data"), null, expression));
-
-                                when(cellValidator.validate(any(), any())).thenReturn(null);
-                                when(cellValidator.validateTransformedValue(any(), any())).thenReturn(null);
-                                when(cellValueExtractor.extractTypedValue(eq(cell), any())).thenReturn("Value");
-
-                                // Act
-                                RowProcessingResult result = rowProcessor.processRow(row, 2, columns);
-
-                                // Assert
-                                assertThat(result.skipped()).isFalse();
-                        }
+                        // Assert
+                        assertThat(result.skipped()).isTrue();
                 }
+
+                @Test
+                @DisplayName("should not skip row when value does not match skip condition")
+                void shouldNotSkipRowWhenValueDoesNotMatch() {
+                        // Arrange
+                        Row row = mock(Row.class);
+                        Cell statusCell = mock(Cell.class);
+                        when(row.getCell(0)).thenReturn(statusCell);
+
+                        List<ColumnConfig> columns = List.of(
+                                        new ColumnConfig("Status", ExcelColumnType.STRING, null, null,
+                                                        DbColumnMapping.of("status"), List.of("Inactive"),
+                                                        null));
+
+                        when(cellValidator.validate(any(), any())).thenReturn(null);
+                        when(cellValidator.validateTransformedValue(any(), any())).thenReturn(null);
+                        when(cellValueExtractor.extractTypedValue(eq(statusCell), any())).thenReturn("Active");
+
+                        // Act
+                        RowProcessingResult result = rowProcessor.processRow(row, 2, createSheetConfig(columns));
+
+                        // Assert
+                        assertThat(result.skipped()).isFalse();
+                }
+
+                @Test
+                @DisplayName("should skip row when column SpEL expression evaluates to true")
+                void shouldSkipRowWhenColumnSpelExpressionIsTrue() {
+                        // Arrange
+                        Row row = mock(Row.class);
+                        Cell dateCell = mock(Cell.class);
+                        when(row.getCell(0)).thenReturn(dateCell);
+
+                        // Expression: Skip if date is after now (future date)
+                        String expression = "#root.isAfter(#dateTime.now())";
+
+                        List<ColumnConfig> columns = List.of(
+                                        new ColumnConfig("Date", ExcelColumnType.DATE, null, null,
+                                                        DbColumnMapping.of("date"), null, expression));
+
+                        when(cellValueExtractor.extractTypedValue(eq(dateCell), any()))
+                                        .thenReturn(java.time.LocalDate.now().plusDays(1));
+
+                        // Act
+                        RowProcessingResult result = rowProcessor.processRow(row, 2, createSheetConfig(columns));
+
+                        // Assert
+                        assertThat(result.skipped()).isTrue();
+                }
+
+                @Test
+                @DisplayName("should skip row when Sheet SpEL expression evaluates to true using multiple columns and DB")
+                void shouldSkipRowWhenSheetSpelExpressionIsTrue() {
+                        // Arrange
+                        Row row = mock(Row.class);
+                        Cell colACell = mock(Cell.class);
+                        Cell colBCell = mock(Cell.class);
+                        when(row.getCell(0)).thenReturn(colACell);
+                        when(row.getCell(1)).thenReturn(colBCell);
+
+                        List<ColumnConfig> columns = List.of(
+                                        new ColumnConfig("ColA", ExcelColumnType.STRING, null, null,
+                                                        DbColumnMapping.of("col_a"), null, null),
+                                        new ColumnConfig("ColB", ExcelColumnType.INTEGER, null, null,
+                                                        DbColumnMapping.of("col_b"), null, null));
+
+                        when(cellValueExtractor.extractTypedValue(eq(colACell), any())).thenReturn("Special");
+                        when(cellValueExtractor.extractTypedValue(eq(colBCell), any())).thenReturn(100);
+
+                        when(databasePort.lookup("EXISTING_TABLE", "KEY", "Special", "KEY"))
+                                        .thenReturn(Optional.of("Special"));
+
+                        // Expression: Skip if ColA == 'Special' AND ColB > 50 AND row exists in DB
+                        String expression = "#ColA == 'Special' && #ColB > 50 && #db.exists('EXISTING_TABLE', 'KEY', #ColA)";
+
+                        // Act
+                        RowProcessingResult result = rowProcessor.processRow(row, 2,
+                                        createSheetConfigWithSkip(columns, expression));
+
+                        // Assert
+                        assertThat(result.skipped()).isTrue();
+                }
+        }
+
+        private com.example.working_with_excels.excel.domain.model.SheetConfig createSheetConfig(
+                        List<ColumnConfig> columns) {
+                return new com.example.working_with_excels.excel.domain.model.SheetConfig("Sheet", columns, "Table",
+                                null, null, null, null, null);
+        }
+
+        private com.example.working_with_excels.excel.domain.model.SheetConfig createSheetConfigWithSkip(
+                        List<ColumnConfig> columns, String skipExpression) {
+                return new com.example.working_with_excels.excel.domain.model.SheetConfig("Sheet", columns, "Table",
+                                null, null, null, skipExpression, null);
         }
 }

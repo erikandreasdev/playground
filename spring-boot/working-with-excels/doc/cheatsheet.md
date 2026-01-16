@@ -153,30 +153,102 @@ files:
 
 ## Dynamic Skip Expressions (SpEL)
 
-Use `skipExpression` for complex conditions. Operations are performed safely on `#root` (the cell value) and a helper `#dateTime`.
+Use **SpEL (Spring Expression Language)** for powerful skip logic. You can define expressions at the **Sheet** level (to check multiple columns or DB state) or at the **Column** level.
 
-### ✅ Supported Expressions
+---
 
-| Logic | Example | Description |
+### 1. Sheet-Level Expressions (`skipExpression`)
+
+Defined at the root of a sheet config. Can access **all column values** and **database checks**.
+
+```yaml
+sheets:
+  - name: "Employees"
+    table: "users"
+    # Skip if Status is 'Archived' OR if email already exists in DB
+    skipExpression: "#Status == 'Archived' || #db.exists('users', 'email', #Email)"
+    columns:
+      - name: "Status"
+      - name: "Email" 
+        dbMapping: { dbColumn: "email" }
+```
+
+#### Available Variables (Sheet Context)
+| Variable | Description |
+| :--- | :--- |
+| `#ColName` | Access any column value by its **name** (case-sensitive). e.g., `#Status`, `#Email`. |
+| `#db` | **Database Helper** for lookups and existence checks. |
+| `#dateTime` | Date utility helper. |
+| `#rowValues` | `Map<String, Object>` containing all extracted column values. |
+
+#### Database Helper Methods (`#db`)
+| Method | Example | Description |
 | :--- | :--- | :--- |
-| **Comparisons** | `#root > 100` | `>`, `<`, `==`, `!=`, `<=`, `>=` |
-| **Boolean Logic** | `#root > 10 && #root < 50` | `&&`, `||`, `!` |
-| **String Methods** | `#root.startsWith('TEST')` | `contains`, `isEmpty`, `length()` etc. |
-| **Dates** | `#root.isAfter(#dateTime.now())` | Check if date is in future |
-| **Null Checks** | `#root == null` | Check if empty |
-| **Math** | `#root * 2 > 50` | Basic arithmetic |
-| **Safe Nav** | `#root?.length() > 5` | Avoid NPE with `?.` |
+| `exists(table, col, val)` | `#db.exists('users', 'id', #UserID)` | Returns `true` if a row exists with that value. |
+| `lookup(table, matchCol, val, returnCol)` | `#db.lookup('codes', 'code', #Code, 'id')` | Returns a value from another table (or `null`). |
 
-### ❌ Blocked (Security)
+---
+
+### 2. Column-Level Expressions (`skipExpression`)
+
+Defined inside a column. Accesses only the **current cell value** (`#root`).
+
+```yaml
+columns:
+  - name: "Quantity"
+    type: INTEGER
+    skipExpression: "#root <= 0"  # Skip row if Quantity is 0 or negative
+```
+
+#### Available Variables (Column Context)
+| Variable | Description |
+| :--- | :--- |
+| `#root` | The typed value of the current cell. |
+| `#dateTime` | Date utility helper. |
+
+---
+
+### 3. Expression Examples
+
+#### A. Basic Logic
+| Goal | Expression |
+| :--- | :--- |
+| **Simple Equality** | `#Status == 'Inactive'` |
+| **Numeric Range** | `#Age < 18 || #Age > 65` |
+| **Empty Check** | `#Comments == null || #Comments == ''` |
+| **Safe Navigation** | `#Description?.length() > 100` |
+
+#### B. String Operations
+| Goal | Expression |
+| :--- | :--- |
+| **Starts With** | `#Sku.startsWith('TEST-')` |
+| **Contains** | `#Notes.contains('DELETE')` |
+| **Regex Match** | `#Code matches '^[A-Z]{3}-\d{2}$'` |
+| **Case Insensitive** | `#Status.equalsIgnoreCase('failed')` |
+
+#### C. Date Logic (using `#dateTime`)
+| Goal | Expression |
+| :--- | :--- |
+| **Future Date** | `#ExpiryDate.isAfter(#dateTime.now())` |
+| **Past Date** | `#CreatedDate.isBefore(#dateTime.yearStart(2023))` |
+| **Specific Year** | `#JoinDate.getYear() == 2024` |
+
+#### D. Database Checks (Sheet Level Only)
+| Goal | Expression |
+| :--- | :--- |
+| **Skip Existing** | `#db.exists('customers', 'email', #Email)` |
+| **Cross-Table Check** | `#db.lookup('products', 'sku', #Sku, 'status') == 'DISCONTINUED'` |
+| **Complex Logic** | `!#db.exists('parents', 'id', #ParentID) && #Type == 'Child'` |
+
+#### E. Multi-Column Logic (Sheet Level Only)
+| Goal | Expression |
+| :--- | :--- |
+| **Dependent Fields** | `#Type == 'Business' && #TaxID == null` |
+| **Total Check** | `(#Price * #Quantity) < 10.00` |
+| **Validation Skip** | `#Status == 'Draft' && #PublishDate != null` |
+
+### ❌ Security / Blocked
 *   No **static methods**: `T(java.lang.Math)` ⛔
 *   No **constructors**: `new java.util.Date()` ⛔
 *   No **bean references**: `@userService` ⛔
 *   No **assignments**: `#root = 'val'` ⛔
-
-### Available Variables
-*   `#root`: Current cell value.
-*   `#dateTime`: Date utility helper.
-    *   `now()` (LocalDate)
-    *   `nowTs()` (LocalDateTime)
-    *   `today()` (java.util.Date)
-    *   `year()` (int)
