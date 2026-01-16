@@ -364,7 +364,14 @@ columns:
 
 ## Combining Transformations with Validation
 
-Transformations are applied **before** validation. This allows you to clean data first, then validate the cleaned result.
+Transformations are applied **before** `allowedValues` and `excludedValues` validation. This allows you to normalize data first, then validate the normalized result.
+
+> [!IMPORTANT]
+> **Validation Order:**
+> 1. Type validation (STRING, DATE, etc.) - on raw cell
+> 2. Regex, length, range validation - on raw cell
+> 3. **Transformations applied**
+> 4. `allowedValues` / `excludedValues` - on **transformed** value
 
 **Example:**
 ```yaml
@@ -382,9 +389,10 @@ columns:
 ```
 
 This configuration will:
-1. Trim whitespace from the input
-2. Convert to uppercase
-3. Validate that the result is one of the allowed values
+1. Check that the cell is a STRING
+2. Trim whitespace from the input
+3. Convert to uppercase (`"active"` → `"ACTIVE"`)
+4. Validate that `"ACTIVE"` is in the allowed values ✅
 
 ---
 

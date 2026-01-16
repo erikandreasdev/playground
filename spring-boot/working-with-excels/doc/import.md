@@ -1,8 +1,10 @@
 # Excel Database Import Reference
 
-This module imports Excel data into Oracle database tables with validation, transformation, and configurable error handling.
+This module imports Excel data into database tables with validation, transformation, and configurable error handling.
 
 ## Quick Start
+
+### Programmatic Usage
 
 ```java
 @Autowired
@@ -23,12 +25,96 @@ ImportReport report = importUseCase.importExcel(
 );
 ```
 
+### REST API Endpoints
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/api/import/dry-run` | GET | Quick test with default files (DRY_RUN) |
+| `/api/import/execute` | POST | Execute import with default files |
+| `/api/import/classpath` | POST | Import from classpath resources |
+| `/api/import/filesystem` | POST | Import from filesystem paths |
+| `/api/import/upload` | POST | Import via file upload (multipart) |
+| `/api/import/url` | POST | Import from URLs (cloud storage) |
+
+**Examples:**
+
+```bash
+# Dry run test
+curl -s http://localhost:8081/api/import/dry-run | jq
+
+# Execute import
+curl -s -X POST http://localhost:8081/api/import/execute | jq
+
+# Upload files
+curl -X POST http://localhost:8081/api/import/upload \
+  -F "excel=@data.xlsx" \
+  -F "config=@mapping.yml" \
+  -F "mode=EXECUTE"
+
+# Import from URL
+curl -X POST "http://localhost:8081/api/import/url?excelUrl=https://...&configUrl=https://...&mode=EXECUTE"
+```
+
+## File Sources
+
+The import service supports multiple file origins:
+
+```java
+// Classpath (src/main/resources/)
+importUseCase.importExcel(
+    FileSource.classpath("users.xlsx"),
+    FileSource.classpath("users_mapping.yml"),
+    ImportMode.EXECUTE
+);
+
+// Filesystem paths
+importUseCase.importExcel(
+    FileSource.filesystem("/data/users.xlsx"),
+    FileSource.filesystem("/config/mapping.yml"),
+    ImportMode.EXECUTE
+);
+
+// InputStream (for uploads)
+importUseCase.importExcel(
+    FileSource.stream(inputStream, "file.xlsx"),
+    FileSource.stream(configStream, "mapping.yml"),
+    ImportMode.DRY_RUN
+);
+
+// URL download (cloud storage)
+importUseCase.importExcel(
+    FileSource.url("https://bucket.s3.amazonaws.com/data.xlsx"),
+    FileSource.url("https://bucket.s3.amazonaws.com/mapping.yml"),
+    ImportMode.EXECUTE
+);
+```
+
 ## Import Modes
 
 | Mode | Description |
 |------|-------------|
-| `DRY_RUN` | Logs SQL statements without executing. Lookups return mock values. |
+| `DRY_RUN` | Logs SQL statements without executing. Lookups still query DB. |
 | `EXECUTE` | Inserts data into the database with transaction management. |
+
+## Processing Pipeline
+
+> [!IMPORTANT]
+> **Order of operations per row:**
+> 1. **Type validation** - Check cell type (STRING, DATE, INTEGER, etc.)
+> 2. **Transform** - Apply UPPERCASE, TRIM, etc.
+> 3. **Value validation** - Check `allowedValues`, `excludedValues` on **transformed** value
+> 4. **Lookup** - Resolve foreign keys from lookup tables
+> 5. **Insert** - Execute SQL
+
+This means if you have:
+```yaml
+transformations:
+  - type: UPPERCASE
+validation:
+  allowedValues: [LOW, MEDIUM, HIGH]
+```
+
+The value `"low"` → transforms to `"LOW"` → validates against allowed list → **passes** ✅
 
 ## YAML Configuration
 
@@ -37,7 +123,7 @@ files:
   - filename: "users.xlsx"
     sheets:
       - name: "Users"
-        table: "APP_USERS"           # Target Oracle table
+        table: "APP_USERS"           # Target database table
         onError: SKIP_ROW            # Error handling strategy
         batchSize: 500               # Rows per batch insert
         columns:
@@ -98,42 +184,6 @@ For complex insert logic, use custom SQL with **named parameters** (`:columnName
 > [!TIP]
 > **Order doesn't matter!** Named parameters match by `dbColumn` name, not by position.
 
-### Syntax
-
-Use `:columnName` where `columnName` matches the `dbColumn` values in your mapping:
-
-```yaml
-sheets:
-  - name: "Users"
-    table: "APP_USERS"
-    customSql: |
-      INSERT INTO APP_USERS (id, name, email, created_at) 
-      VALUES (:USER_ID, :FULL_NAME, :EMAIL, SYSDATE)
-    columns:
-      - name: "Email Address"      # Order in YAML doesn't matter
-        type: EMAIL
-        dbMapping: { dbColumn: "EMAIL" }
-
-      - name: "Full Name"
-        type: STRING
-        dbMapping: { dbColumn: "FULL_NAME" }
-
-      - name: "User ID"
-        type: INTEGER
-        dbMapping: { dbColumn: "USER_ID" }
-```
-
-The `:USER_ID`, `:FULL_NAME`, and `:EMAIL` parameters are matched to the corresponding `dbColumn` values.
-
-### Use Cases
-
-| Scenario | Example |
-|----------|---------|
-| Oracle sequences | `PRODUCT_SEQ.NEXTVAL` |
-| Timestamps | `SYSDATE`, `SYSTIMESTAMP` |
-| Default values | Hardcoded values |
-| Oracle functions | `SYS_GUID()`, `UPPER(:name)` |
-
 ### Example: Sequence + Timestamp
 
 ```yaml
@@ -152,6 +202,7 @@ columns:
 ImportReport report = importUseCase.importExcel(...);
 
 boolean success = report.isSuccess();
+String duration = report.getDurationFormatted();  // "1.50s"
 ImportMetrics metrics = report.metrics();
 
 for (SheetImportResult sheet : report.sheets()) {
@@ -177,7 +228,7 @@ INFO  Sheet 'Users' completed: total=10000, inserted=9950, skipped=50
 
 ## Database Configuration
 
-### Production (Oracle 19c)
+### Production (Oracle)
 
 ```properties
 spring.datasource.url=jdbc:oracle:thin:@//hostname:1521/servicename
@@ -185,12 +236,12 @@ spring.datasource.username=user
 spring.datasource.password=password
 ```
 
-### Development (Oracle gvenzl/oracle-free)
+### Development (Docker Oracle)
 
 ```properties
 spring.datasource.url=jdbc:oracle:thin:@//localhost:1521/FREEPDB1
-spring.datasource.username=system
-spring.datasource.password=oracle
+spring.datasource.username=appuser
+spring.datasource.password=appuser123
 ```
 
 ### No Database (DryRun only)
