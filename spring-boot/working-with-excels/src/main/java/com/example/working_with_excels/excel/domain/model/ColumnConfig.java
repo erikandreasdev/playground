@@ -7,28 +7,31 @@ import java.util.List;
  *
  * <p>
  * This record defines the expected name, data type, validation rules,
- * and transformations for a column within an Excel sheet.
+ * transformations, and database mapping for a column within an Excel sheet.
  *
  * @param name            the expected header name of the column
  * @param type            the expected data type of values in this column
  * @param validation      optional validation rules for column values
  * @param transformations optional list of transformations to apply (in order)
+ * @param dbMapping       optional database column mapping configuration
  */
 public record ColumnConfig(
         String name,
         ExcelColumnType type,
         ColumnValidation validation,
-        List<ColumnTransformation> transformations) {
+        List<ColumnTransformation> transformations,
+        DbColumnMapping dbMapping) {
 
     /**
-     * Creates a ColumnConfig without transformations (for backward compatibility).
+     * Creates a ColumnConfig without transformations or db mapping (for backward
+     * compatibility).
      *
      * @param name       the expected header name
      * @param type       the expected data type
      * @param validation optional validation rules
-     * @return a new ColumnConfig with no transformations
+     * @return a new ColumnConfig with no transformations or db mapping
      */
     public static ColumnConfig of(String name, ExcelColumnType type, ColumnValidation validation) {
-        return new ColumnConfig(name, type, validation, null);
+        return new ColumnConfig(name, type, validation, null, null);
     }
 }

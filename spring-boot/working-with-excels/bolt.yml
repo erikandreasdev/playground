@@ -1,0 +1,61 @@
+oracle:
+  desc: "Start Oracle Database"
+  cmds:
+    - "docker compose up -d"
+
+clean-oracle:
+  desc: "Clean Oracle Database"
+  cmds:
+    - "docker compose down -v"
+
+logs:
+  desc: "Show Oracle Logs"
+  cmds:
+    - "docker compose logs -f oracle"
+
+app-oracle:
+  desc: "Run app with Oracle profile"
+  cmds:
+    - "./mvnw spring-boot:run -Dspring-boot.run.profiles=oracle"
+
+app:
+  desc: "Run app (no database)"
+  cmds:
+    - "./mvnw spring-boot:run"
+
+sqlplus:
+  desc: "Connect to Oracle Database"
+  cmds:
+    - "docker exec -it excel-import-oracle sqlplus appuser/appuser123@//localhost:1521/FREEPDB1"
+
+init-db:
+  desc: "Initialize Oracle tables"
+  cmds:
+    - "./docker/init-db.sh"
+
+# =========================================================================
+# REST API - Import Endpoints
+# =========================================================================
+
+dry-run:
+  desc: "Test import (DRY_RUN)"
+  cmds:
+    - "curl -s http://localhost:8081/api/import/dry-run | jq"
+
+execute:
+  desc: "Execute import"
+  cmds:
+    - "curl -s -X POST http://localhost:8081/api/import/execute | jq"
+
+import-classpath:
+  desc: "Import from classpath"
+  cmds:
+    - "curl -s -X POST 'http://localhost:8081/api/import/classpath?mode=DRY_RUN' | jq"
+
+import-classpath-execute:
+  desc: "Import from classpath"
+  cmds:
+    - "docker compose up -d"
+    - "./docker/init-db.sh"
+    - "./mvnw spring-boot:run -Dspring-boot.run.profiles=oracle"
+    - "curl -s http://localhost:8081/api/import/dry-run | jq"

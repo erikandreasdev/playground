@@ -16,19 +16,23 @@ import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
  * Infrastructure adapter for loading Excel configuration from YAML files.
  *
  * <p>
- * This adapter implements the {@link ExcelConfigLoaderPort} output port
- * and provides the concrete implementation for reading and parsing YAML
- * configuration files from the classpath.
+ * Supports loading from classpath resources and input streams.
  */
 @Component
 public class YamlExcelConfigLoader implements ExcelConfigLoaderPort {
 
+    private final ObjectMapper yamlMapper = new ObjectMapper(new YAMLFactory());
+
     @Override
     public FilesConfig loadConfig(String yamlConfigPath) throws IOException {
-        ObjectMapper mapper = new ObjectMapper(new YAMLFactory());
         try (InputStream yamlStream = new ClassPathResource(yamlConfigPath).getInputStream()) {
-            return mapper.readValue(yamlStream, FilesConfig.class);
+            return loadConfigFromStream(yamlStream);
         }
+    }
+
+    @Override
+    public FilesConfig loadConfigFromStream(InputStream inputStream) throws IOException {
+        return yamlMapper.readValue(inputStream, FilesConfig.class);
     }
 
     @Override

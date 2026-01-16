@@ -1,0 +1,349 @@
+# ============================================================================
+# Comprehensive Excel Import Mapping - Reference Example
+# ============================================================================
+# This file demonstrates ALL import features as a reference for future imports.
+# ============================================================================
+
+files:
+  - filename: "import_data.xlsx"
+    sheets:
+
+      # ========================================================================
+      # SHEET 1: Users - All column types + lookups + transformations
+      # ========================================================================
+      - name: "Users"
+        table: "APP_USERS"
+        onError: SKIP_ROW
+        batchSize: 100
+        columns:
+          # Integer type - primary key
+          - name: "User ID"
+            type: INTEGER
+            validation:
+              notEmpty: true
+            dbMapping:
+              dbColumn: "USER_ID"
+
+          # String with transformations
+          - name: "Full Name"
+            type: STRING
+            validation:
+              notEmpty: true
+              minLength: 2
+              maxLength: 100
+            transformations:
+              - type: TRIM
+              - type: NORMALIZE_SPACES
+              - type: TITLE_CASE
+            dbMapping:
+              dbColumn: "FULL_NAME"
+
+          # Email type with validation
+          - name: "Email Address"
+            type: EMAIL
+            validation:
+              notEmpty: true
+            transformations:
+              - type: TRIM
+              - type: LOWERCASE
+            dbMapping:
+              dbColumn: "EMAIL"
+
+          # Date type
+          - name: "Birth Date"
+            type: DATE
+            dbMapping:
+              dbColumn: "BIRTH_DATE"
+
+          # Boolean type
+          - name: "Is Active"
+            type: BOOLEAN
+            dbMapping:
+              dbColumn: "IS_ACTIVE"
+
+          # Decimal type
+          - name: "Account Balance"
+            type: DECIMAL
+            validation:
+              min: 0
+            dbMapping:
+              dbColumn: "BALANCE"
+
+          # Lookup example - resolve country name to ID
+          - name: "Country"
+            type: STRING
+            dbMapping:
+              dbColumn: "COUNTRY_ID"
+              lookup:
+                table: "COUNTRIES"
+                matchColumn: "NAME"
+                returnColumn: "ID"
+
+          # Lookup example - resolve status name to ID
+          - name: "Status"
+            type: STRING
+            validation:
+              allowedValues: ["ACTIVE", "INACTIVE", "PENDING", "ARCHIVED"]
+            transformations:
+              - type: TRIM
+              - type: UPPERCASE
+            dbMapping:
+              dbColumn: "STATUS_ID"
+              lookup:
+                table: "STATUS_TYPES"
+                matchColumn: "CODE"
+                returnColumn: "ID"
+
+      # ========================================================================
+      # SHEET 2: Products - Custom SQL with sequences
+      # ========================================================================
+      - name: "Products"
+        table: "PRODUCTS"
+        onError: SKIP_ROW
+        batchSize: 200
+        # Custom SQL using named parameters + Oracle sequence + SYSTIMESTAMP
+        customSql: |
+          INSERT INTO PRODUCTS (PRODUCT_ID, PRODUCT_NAME, DESCRIPTION, PRICE, CATEGORY_ID, SKU, CREATED_AT)
+          VALUES (PRODUCT_SEQ.NEXTVAL, :PRODUCT_NAME, :DESCRIPTION, :PRICE, :CATEGORY_ID, :SKU, SYSTIMESTAMP)
+        columns:
+          - name: "Product Name"
+            type: STRING
+            validation:
+              notEmpty: true
+            transformations:
+              - type: TRIM
+            dbMapping:
+              dbColumn: "PRODUCT_NAME"
+
+          - name: "Description"
+            type: STRING
+            transformations:
+              - type: TRIM
+            dbMapping:
+              dbColumn: "DESCRIPTION"
+
+          - name: "Price"
+            type: DECIMAL
+            validation:
+              notEmpty: true
+              min: 0.01
+            dbMapping:
+              dbColumn: "PRICE"
+
+          # Lookup for category
+          - name: "Category"
+            type: STRING
+            dbMapping:
+              dbColumn: "CATEGORY_ID"
+              lookup:
+                table: "CATEGORIES"
+                matchColumn: "NAME"
+                returnColumn: "ID"
+
+          - name: "SKU"
+            type: STRING
+            validation:
+              regex: "^[A-Z]{2,3}-[0-9]{4,6}$"
+            transformations:
+              - type: TRIM
+              - type: UPPERCASE
+            dbMapping:
+              dbColumn: "SKU"
+
+          # Column without dbMapping - validated but NOT inserted
+          - name: "Notes"
+            type: STRING
+            # No dbMapping - this column is skipped during insert
+
+      # ========================================================================
+      # SHEET 3: Validation Test - All validation rules
+      # ========================================================================
+      - name: "Validation Test"
+        table: "VALIDATION_TEST"
+        onError: SKIP_ROW
+        batchSize: 50
+        columns:
+          - name: "ID"
+            type: INTEGER
+            dbMapping:
+              dbColumn: "ID"
+
+          # Required validation
+          - name: "Required Field"
+            type: STRING
+            validation:
+              notEmpty: true
+            dbMapping:
+              dbColumn: "REQUIRED_FIELD"
+
+          # Length validation
+          - name: "Code"
+            type: STRING
+            validation:
+              minLength: 3
+              maxLength: 10
+            dbMapping:
+              dbColumn: "CODE_FIELD"
+
+          # Regex validation - phone number
+          - name: "Phone Number"
+            type: STRING
+            validation:
+              regex: "^\\+?[0-9]{10,15}$"
+            dbMapping:
+              dbColumn: "PHONE_NUMBER"
+
+          # Regex validation - postal code
+          - name: "Postal Code"
+            type: STRING
+            validation:
+              regex: "^[0-9]{5}(-[0-9]{4})?$"
+            dbMapping:
+              dbColumn: "POSTAL_CODE"
+
+          # Range validation
+          - name: "Percentage"
+            type: DECIMAL
+            validation:
+              min: 0
+              max: 100
+            dbMapping:
+              dbColumn: "PERCENTAGE"
+
+          # Allowed values
+          - name: "Priority"
+            type: STRING
+            validation:
+              allowedValues: ["LOW", "MEDIUM", "HIGH", "CRITICAL"]
+            transformations:
+              - type: UPPERCASE
+            dbMapping:
+              dbColumn: "PRIORITY"
+
+          # Excluded values
+          - name: "Username"
+            type: STRING
+            validation:
+              excludedValues: ["admin", "root", "system"]
+            transformations:
+              - type: LOWERCASE
+            dbMapping:
+              dbColumn: "USERNAME"
+
+          # Email type
+          - name: "Email"
+            type: EMAIL
+            dbMapping:
+              dbColumn: "EMAIL"
+
+      # ========================================================================
+      # SHEET 4: Transformation Test - All transformation types
+      # ========================================================================
+      - name: "Transformation Test"
+        table: "TRANSFORMATION_TEST"
+        onError: SKIP_ROW
+        batchSize: 50
+        columns:
+          - name: "ID"
+            type: INTEGER
+            dbMapping:
+              dbColumn: "ID"
+
+          # Case transformations
+          - name: "Uppercase Field"
+            type: STRING
+            transformations:
+              - type: TRIM
+              - type: UPPERCASE
+            dbMapping:
+              dbColumn: "UPPERCASE_FIELD"
+
+          - name: "Lowercase Field"
+            type: STRING
+            transformations:
+              - type: TRIM
+              - type: LOWERCASE
+            dbMapping:
+              dbColumn: "LOWERCASE_FIELD"
+
+          - name: "Title Case Field"
+            type: STRING
+            transformations:
+              - type: TRIM
+              - type: TITLE_CASE
+            dbMapping:
+              dbColumn: "TITLECASE_FIELD"
+
+          # Whitespace transformations
+          - name: "Trimmed Field"
+            type: STRING
+            transformations:
+              - type: TRIM
+            dbMapping:
+              dbColumn: "TRIMMED_FIELD"
+
+          - name: "Normalized Field"
+            type: STRING
+            transformations:
+              - type: NORMALIZE_SPACES
+            dbMapping:
+              dbColumn: "NORMALIZED_FIELD"
+
+          # Padding transformations
+          - name: "Padded Left"
+            type: STRING
+            transformations:
+              - type: PAD_LEFT
+                length: 10
+                padChar: "0"
+            dbMapping:
+              dbColumn: "PADDED_LEFT"
+
+          - name: "Padded Right"
+            type: STRING
+            transformations:
+              - type: PAD_RIGHT
+                length: 10
+                padChar: "X"
+            dbMapping:
+              dbColumn: "PADDED_RIGHT"
+
+          # Replace transformation
+          - name: "Replaced Field"
+            type: STRING
+            transformations:
+              - type: REPLACE
+                pattern: "-"
+                replacement: "_"
+            dbMapping:
+              dbColumn: "REPLACED_FIELD"
+
+          # Substring transformation
+          - name: "Substring Field"
+            type: STRING
+            transformations:
+              - type: SUBSTRING
+                start: 0
+                end: 10
+            dbMapping:
+              dbColumn: "SUBSTRING_FIELD"
+
+      # ========================================================================
+      # SHEET 5: Error Strategy Demo - FAIL_SHEET mode
+      # ========================================================================
+      - name: "Fail Sheet Demo"
+        table: "VALIDATION_TEST"
+        onError: FAIL_SHEET          # Stop on first error in this sheet
+        batchSize: 10
+        columns:
+          - name: "ID"
+            type: INTEGER
+            dbMapping:
+              dbColumn: "ID"
+
+          - name: "Required Field"
+            type: STRING
+            validation:
+              notEmpty: true
+            dbMapping:
+              dbColumn: "REQUIRED_FIELD"

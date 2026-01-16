@@ -54,6 +54,45 @@ public class CellValidator {
         return null;
     }
 
+    /**
+     * Validates a transformed value against the column configuration rules.
+     *
+     * <p>
+     * This method should be called AFTER transformation to validate
+     * the final value (e.g., after UPPERCASE transform, check against
+     * allowedValues).
+     *
+     * @param value     the transformed value (may be null)
+     * @param colConfig the column configuration
+     * @return an error message if validation fails, or null if valid
+     */
+    public String validateTransformedValue(Object value, ColumnConfig colConfig) {
+        if (colConfig.validation() == null) {
+            return null;
+        }
+
+        ColumnValidation validation = colConfig.validation();
+        String stringValue = value != null ? value.toString() : null;
+
+        // Allowed Values (Enumerated) - check against transformed value
+        if (validation.allowedValues() != null && !validation.allowedValues().isEmpty() && stringValue != null) {
+            if (!validation.allowedValues().contains(stringValue)) {
+                return String.format("Validation failed for column '%s': Value '%s' is not in the allowed list: %s",
+                        colConfig.name(), stringValue, validation.allowedValues());
+            }
+        }
+
+        // Excluded Values - check against transformed value
+        if (validation.excludedValues() != null && !validation.excludedValues().isEmpty() && stringValue != null) {
+            if (validation.excludedValues().contains(stringValue)) {
+                return String.format("Validation failed for column '%s': Value '%s' is in the excluded list",
+                        colConfig.name(), stringValue);
+            }
+        }
+
+        return null;
+    }
+
     private boolean isValidType(Cell cell, ExcelColumnType expectedType) {
         return switch (expectedType) {
             case STRING -> cell.getCellType() == CellType.STRING;
@@ -108,21 +147,9 @@ public class CellValidator {
             }
         }
 
-        // Allowed Values (Enumerated)
-        if (validation.allowedValues() != null && !validation.allowedValues().isEmpty() && stringValue != null) {
-            String val = stringValue;
-            if (!validation.allowedValues().contains(val)) {
-                return "Value '" + val + "' is not in the allowed list: " + validation.allowedValues();
-            }
-        }
-
-        // Excluded Values
-        if (validation.excludedValues() != null && !validation.excludedValues().isEmpty() && stringValue != null) {
-            String val = stringValue;
-            if (validation.excludedValues().contains(val)) {
-                return "Value '" + val + "' is in the excluded list";
-            }
-        }
+        // NOTE: allowedValues and excludedValues are checked in
+        // validateTransformedValue()
+        // AFTER transformation, so we skip them here.
 
         return null;
     }

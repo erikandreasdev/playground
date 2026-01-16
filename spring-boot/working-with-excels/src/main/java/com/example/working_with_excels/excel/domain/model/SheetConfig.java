@@ -6,11 +6,51 @@ import java.util.List;
  * Value object representing configuration for a single Excel sheet.
  *
  * <p>
- * This record defines the expected sheet name and the ordered list
- * of column configurations that the sheet should contain.
+ * This record defines the expected sheet name, column configurations,
+ * and database import settings for a sheet within an Excel file.
  *
- * @param name    the expected name of the Excel sheet
- * @param columns the ordered list of column configurations
+ * @param name      the expected name of the Excel sheet
+ * @param columns   the ordered list of column configurations
+ * @param table     optional target database table name for imports
+ * @param onError   optional error handling strategy (defaults to SKIP_ROW)
+ * @param batchSize optional batch size for inserts (defaults to 100)
+ * @param customSql optional custom SQL for complex insert logic
  */
-public record SheetConfig(String name, List<ColumnConfig> columns) {
+public record SheetConfig(
+        String name,
+        List<ColumnConfig> columns,
+        String table,
+        ErrorStrategy onError,
+        Integer batchSize,
+        String customSql) {
+
+    /** Default batch size for database inserts. */
+    public static final int DEFAULT_BATCH_SIZE = 100;
+
+    /**
+     * Gets the batch size, using default if not specified.
+     *
+     * @return the configured batch size or DEFAULT_BATCH_SIZE
+     */
+    public int getEffectiveBatchSize() {
+        return batchSize != null ? batchSize : DEFAULT_BATCH_SIZE;
+    }
+
+    /**
+     * Gets the error strategy, using default if not specified.
+     *
+     * @return the configured error strategy or SKIP_ROW
+     */
+    public ErrorStrategy getEffectiveErrorStrategy() {
+        return onError != null ? onError : ErrorStrategy.SKIP_ROW;
+    }
+
+    /**
+     * Checks if this sheet has custom SQL configured.
+     *
+     * @return true if custom SQL is provided
+     */
+    public boolean hasCustomSql() {
+        return customSql != null && !customSql.isBlank();
+    }
 }
