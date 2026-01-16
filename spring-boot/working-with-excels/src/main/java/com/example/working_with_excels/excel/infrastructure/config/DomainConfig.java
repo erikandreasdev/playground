@@ -3,6 +3,7 @@ package com.example.working_with_excels.excel.infrastructure.config;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
+import com.example.working_with_excels.excel.domain.service.CellTransformer;
 import com.example.working_with_excels.excel.domain.service.CellValidator;
 
 /**
@@ -23,5 +24,15 @@ public class DomainConfig {
     @Bean
     public CellValidator cellValidator() {
         return new CellValidator();
+    }
+
+    /**
+     * Provides the CellTransformer domain service as a Spring bean.
+     *
+     * @return a new instance of CellTransformer
+     */
+    @Bean
+    public CellTransformer cellTransformer() {
+        return new CellTransformer();
     }
 }
