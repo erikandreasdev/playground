@@ -1,17 +1,37 @@
-package com.example.working_with_excels.config.validation;
+package com.example.working_with_excels.excel.domain.service;
 
+import com.example.working_with_excels.excel.domain.model.ColumnConfig;
+import com.example.working_with_excels.excel.domain.model.ColumnValidation;
+import com.example.working_with_excels.excel.domain.model.ExcelColumnType;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.CellType;
 import org.apache.poi.ss.usermodel.DateUtil;
-import org.springframework.stereotype.Component;
 
-@Component
+/**
+ * Domain service responsible for validating individual Excel cell values.
+ *
+ * <p>
+ * This class encapsulates the core validation logic for cell values,
+ * including type checking, regex matching, length constraints, numeric
+ * ranges, and value restrictions. It is a pure domain service with no
+ * framework dependencies.
+ */
 public class CellValidator {
 
+    /**
+     * Validates a cell value against the provided column configuration.
+     *
+     * @param cell      the Excel cell to validate (may be null)
+     * @param colConfig the column configuration containing type and validation
+     *                  rules
+     * @return an error message if validation fails, or null if the cell is valid
+     */
     public String validate(Cell cell, ColumnConfig colConfig) {
         // Not Empty Validation
         boolean isBlank = cell == null || cell.getCellType() == CellType.BLANK;
-        if (colConfig.validation() != null && Boolean.TRUE.equals(colConfig.validation().notEmpty()) && isBlank) {
+        if (colConfig.validation() != null
+                && Boolean.TRUE.equals(colConfig.validation().notEmpty())
+                && isBlank) {
             return "Value is required at column: " + colConfig.name();
         }
 
@@ -90,7 +110,7 @@ public class CellValidator {
 
         // Allowed Values (Enumerated)
         if (validation.allowedValues() != null && !validation.allowedValues().isEmpty() && stringValue != null) {
-            String val = stringValue; // final for lambda/streams if needed
+            String val = stringValue;
             if (!validation.allowedValues().contains(val)) {
                 return "Value '" + val + "' is not in the allowed list: " + validation.allowedValues();
             }
@@ -116,8 +136,9 @@ public class CellValidator {
     }
 
     private String getCellTypeDescription(Cell cell) {
-        if (cell == null)
+        if (cell == null) {
             return "NULL";
+        }
         return switch (cell.getCellType()) {
             case STRING -> "STRING (" + cell.getStringCellValue() + ")";
             case NUMERIC -> DateUtil.isCellDateFormatted(cell) ? "DATE" : "NUMBER (" + cell.getNumericCellValue() + ")";

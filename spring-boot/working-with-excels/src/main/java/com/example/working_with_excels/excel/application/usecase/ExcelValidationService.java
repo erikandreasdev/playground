@@ -1,4 +1,9 @@
-package com.example.working_with_excels.config.validation;
+package com.example.working_with_excels.excel.application.usecase;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.Row;
@@ -8,22 +13,34 @@ import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Service;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.util.ArrayList;
-import java.util.List;
+import com.example.working_with_excels.excel.application.dto.ExcelValidationReport;
+import com.example.working_with_excels.excel.application.dto.SheetValidationReport;
+import com.example.working_with_excels.excel.application.port.input.ExcelValidationUseCase;
+import com.example.working_with_excels.excel.application.port.output.ExcelConfigLoaderPort;
+import com.example.working_with_excels.excel.domain.model.ColumnConfig;
+import com.example.working_with_excels.excel.domain.model.FileConfig;
+import com.example.working_with_excels.excel.domain.model.FilesConfig;
+import com.example.working_with_excels.excel.domain.model.RowValidationError;
+import com.example.working_with_excels.excel.domain.model.SheetConfig;
+import com.example.working_with_excels.excel.domain.service.CellValidator;
 
+import lombok.RequiredArgsConstructor;
+
+/**
+ * Use case implementation for validating Excel file structure and content.
+ *
+ * <p>
+ * This service implements the {@link ExcelValidationUseCase} port and
+ * orchestrates the validation process using domain services and output ports.
+ */
 @Service
-public class ExcelValidationService {
+@RequiredArgsConstructor
+public class ExcelValidationService implements ExcelValidationUseCase {
 
-    private final ExcelConfigLoader configLoader;
+    private final ExcelConfigLoaderPort configLoader;
     private final CellValidator cellValidator;
 
-    public ExcelValidationService(ExcelConfigLoader configLoader, CellValidator cellValidator) {
-        this.configLoader = configLoader;
-        this.cellValidator = cellValidator;
-    }
-
+    @Override
     public ExcelValidationReport validateExcelStructure(String excelFileName, String yamlConfigPath)
             throws IOException {
         // 1. Load Config

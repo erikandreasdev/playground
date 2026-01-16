@@ -1,26 +1,36 @@
 package com.example.working_with_excels;
 
-import com.example.working_with_excels.config.validation.CellValidator;
-import com.example.working_with_excels.config.validation.ExcelConfigLoader;
-import com.example.working_with_excels.config.validation.ExcelValidationReport;
-import com.example.working_with_excels.config.validation.ExcelValidationService;
-import com.example.working_with_excels.config.validation.SheetValidationReport;
+import java.io.IOException;
+
 import org.junit.jupiter.api.Test;
 
-import java.io.IOException;
+import com.example.working_with_excels.excel.application.dto.ExcelValidationReport;
+import com.example.working_with_excels.excel.application.dto.SheetValidationReport;
+import com.example.working_with_excels.excel.application.usecase.ExcelValidationService;
+import com.example.working_with_excels.excel.domain.service.CellValidator;
+import com.example.working_with_excels.excel.infrastructure.adapter.output.YamlExcelConfigLoader;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+/**
+ * Integration tests for the Excel validation use case.
+ *
+ * <p>
+ * These tests verify the complete validation flow using real file resources.
+ */
 class ExcelValidationTest {
 
     @Test
     void testExcelStructureValidationReport() throws IOException {
-        ExcelConfigLoader configLoader = new ExcelConfigLoader();
+        // Arrange
+        YamlExcelConfigLoader configLoader = new YamlExcelConfigLoader();
         CellValidator cellValidator = new CellValidator();
         ExcelValidationService service = new ExcelValidationService(configLoader, cellValidator);
 
+        // Act
         ExcelValidationReport report = service.validateExcelStructure("excel_data.xlsx", "excel_data_mapping.yml");
 
+        // Assert
         assertThat(report).isNotNull();
         assertThat(report.filename()).isEqualTo("excel_data.xlsx");
         assertThat(report.mappingFile()).isEqualTo("excel_data_mapping.yml");
