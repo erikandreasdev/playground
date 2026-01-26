@@ -1,0 +1,8 @@
+{
+  "version": "1",
+  "name": "Working With Excels",
+  "type": "collection",
+  "ignore": [
+    ".git"
+  ]
+}

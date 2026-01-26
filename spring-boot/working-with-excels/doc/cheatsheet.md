@@ -189,22 +189,37 @@ sheets:
 
 ---
 
-### 2. Column-Level Expressions (`skipExpression`)
+### 3. Multiple Expressions (`skipExpressions`)
+   
+   You can provide a list of expressions. If **ANY** expression evaluates to `true`, the row (or column) is skipped.
+   
+   ```yaml
+   sheets:
+     - name: "Employees"
+       skipExpressions:
+         - "#Status == 'Archived'"
+         - "#db.exists('users', 'email', #Email)"
+   ```
+   
+   ---
+   
+   ### 4. Column-Level Expressions (`skipExpression`)
+   
+   Defined inside a column. Accesses only the **current cell value** (`#root`).
+   
+   ```yaml
+   columns:
+     - name: "Quantity"
+       type: INTEGER
+       skipExpression: "#root <= 0"  # Skip row if Quantity is 0 or negative
+   ```
+   
+   #### Available Variables (Column Context)
+   | Variable | Description |
+   | :--- | :--- |
+   | `#root` | The typed value of the current cell. |
+   | `#dateTime` | Date utility helper. |
 
-Defined inside a column. Accesses only the **current cell value** (`#root`).
-
-```yaml
-columns:
-  - name: "Quantity"
-    type: INTEGER
-    skipExpression: "#root <= 0"  # Skip row if Quantity is 0 or negative
-```
-
-#### Available Variables (Column Context)
-| Variable | Description |
-| :--- | :--- |
-| `#root` | The typed value of the current cell. |
-| `#dateTime` | Date utility helper. |
 
 ---
 

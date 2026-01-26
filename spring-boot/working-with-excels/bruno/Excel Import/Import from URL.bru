@@ -1,0 +1,17 @@
+meta {
+  name: Import from URL
+  type: http
+  seq: 4
+}
+
+post {
+  url: {{baseUrl}}/api/import/url?excelUrl=https://example.com/data.xlsx&configUrl=https://example.com/mapping.yml&mode=DRY_RUN
+  body: none
+  auth: none
+}
+
+params:query {
+  excelUrl: https://example.com/data.xlsx
+  configUrl: https://example.com/mapping.yml
+  mode: DRY_RUN
+}

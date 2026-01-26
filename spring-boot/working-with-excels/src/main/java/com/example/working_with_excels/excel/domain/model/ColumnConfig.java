@@ -22,7 +22,8 @@ public record ColumnConfig(
         List<ColumnTransformation> transformations,
         DbColumnMapping dbMapping,
         List<Object> skipIf,
-        String skipExpression) {
+        String skipExpression,
+        List<String> skipExpressions) {
 
     /**
      * Creates a ColumnConfig without transformations or db mapping (for backward
@@ -34,6 +35,6 @@ public record ColumnConfig(
      * @return a new ColumnConfig with no transformations or db mapping
      */
     public static ColumnConfig of(String name, ExcelColumnType type, ColumnValidation validation) {
-        return new ColumnConfig(name, type, validation, null, null, null, null);
+        return new ColumnConfig(name, type, validation, null, null, null, null, null);
     }
 }

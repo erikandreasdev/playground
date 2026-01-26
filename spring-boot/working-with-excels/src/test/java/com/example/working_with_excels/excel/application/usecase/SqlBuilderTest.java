@@ -36,14 +36,14 @@ class SqlBuilderTest {
                         // Arrange
                         List<ColumnConfig> columns = List.of(
                                         new ColumnConfig("Name", ExcelColumnType.STRING, null, null,
-                                                        DbColumnMapping.of("user_name"), null, null),
+                                                        DbColumnMapping.of("user_name"), null, null, null),
                                         new ColumnConfig("Email", ExcelColumnType.EMAIL, null, null,
-                                                        DbColumnMapping.of("email_address"), null, null),
+                                                        DbColumnMapping.of("email_address"), null, null, null),
                                         new ColumnConfig("Age", ExcelColumnType.INTEGER, null, null,
-                                                        DbColumnMapping.of("age"), null, null));
+                                                        DbColumnMapping.of("age"), null, null, null));
 
                         SheetConfig sheetConfig = new SheetConfig("Users", columns, "APP_USERS",
-                                        null, null, null, null, null);
+                                        null, null, null, null, null, null);
 
                         // Act
                         String sql = sqlBuilder.buildInsertSql(sheetConfig);
@@ -59,14 +59,15 @@ class SqlBuilderTest {
                         // Arrange
                         List<ColumnConfig> columns = List.of(
                                         new ColumnConfig("Name", ExcelColumnType.STRING, null, null,
-                                                        DbColumnMapping.of("user_name"), null, null),
-                                        new ColumnConfig("Notes", ExcelColumnType.STRING, null, null, null, null, null), // No
-                                                                                                                         // mapping
+                                                        DbColumnMapping.of("user_name"), null, null, null),
+                                        new ColumnConfig("Notes", ExcelColumnType.STRING, null, null, null, null, null,
+                                                        null), // No
+                                                               // mapping
                                         new ColumnConfig("Email", ExcelColumnType.EMAIL, null, null,
-                                                        DbColumnMapping.of("email"), null, null));
+                                                        DbColumnMapping.of("email"), null, null, null));
 
                         SheetConfig sheetConfig = new SheetConfig("Users", columns, "APP_USERS",
-                                        null, null, null, null, null);
+                                        null, null, null, null, null, null);
 
                         // Act
                         String sql = sqlBuilder.buildInsertSql(sheetConfig);
@@ -82,10 +83,10 @@ class SqlBuilderTest {
                         // Arrange
                         List<ColumnConfig> columns = List.of(
                                         new ColumnConfig("ID", ExcelColumnType.INTEGER, null, null,
-                                                        DbColumnMapping.of("id"), null, null));
+                                                        DbColumnMapping.of("id"), null, null, null));
 
                         SheetConfig sheetConfig = new SheetConfig("Data", columns, "SIMPLE_TABLE",
-                                        null, null, null, null, null);
+                                        null, null, null, null, null, null);
 
                         // Act
                         String sql = sqlBuilder.buildInsertSql(sheetConfig);
@@ -100,10 +101,10 @@ class SqlBuilderTest {
                         // Arrange
                         List<ColumnConfig> columns = List.of(
                                         new ColumnConfig("Notes", ExcelColumnType.STRING, null, null, null, null,
-                                                        null));
+                                                        null, null));
 
                         SheetConfig sheetConfig = new SheetConfig("Data", columns, "TABLE",
-                                        null, null, null, null, null);
+                                        null, null, null, null, null, null);
 
                         // Act
                         String sql = sqlBuilder.buildInsertSql(sheetConfig);
@@ -118,12 +119,12 @@ class SqlBuilderTest {
                         // Arrange
                         List<ColumnConfig> columns = List.of(
                                         new ColumnConfig("ID", ExcelColumnType.INTEGER, null, null,
-                                                        DbColumnMapping.of("id"), null, null),
+                                                        DbColumnMapping.of("id"), null, null, null),
                                         new ColumnConfig("Name", ExcelColumnType.STRING, null, null,
-                                                        DbColumnMapping.of("name"), null, null));
+                                                        DbColumnMapping.of("name"), null, null, null));
 
                         SheetConfig sheetConfig = new SheetConfig("Users", columns, "APP_USERS",
-                                        null, null, null, null, List.of("id"));
+                                        null, null, null, null, null, List.of("id"));
 
                         // Act
                         String sql = sqlBuilder.buildInsertSql(sheetConfig);

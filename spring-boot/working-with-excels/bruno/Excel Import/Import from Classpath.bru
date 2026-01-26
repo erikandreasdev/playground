@@ -1,0 +1,17 @@
+meta {
+  name: Import from Classpath
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{baseUrl}}/api/import/classpath?excel=import_data.xlsx&config=import_mapping.yml&mode=DRY_RUN
+  body: none
+  auth: none
+}
+
+params:query {
+  excel: import_data.xlsx
+  config: import_mapping.yml
+  mode: DRY_RUN
+}

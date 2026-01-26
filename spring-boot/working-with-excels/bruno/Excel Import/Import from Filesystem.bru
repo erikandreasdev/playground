@@ -1,0 +1,17 @@
+meta {
+  name: Import from Filesystem
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{baseUrl}}/api/import/filesystem?excelPath=/Users/erik/dev/playground/spring-boot/working-with-excels/src/main/resources/import_data.xlsx&configPath=/Users/erik/dev/playground/spring-boot/working-with-excels/src/main/resources/import_mapping.yml&mode=DRY_RUN
+  body: none
+  auth: none
+}
+
+params:query {
+  excelPath: /Users/erik/dev/playground/spring-boot/working-with-excels/src/main/resources/import_data.xlsx
+  configPath: /Users/erik/dev/playground/spring-boot/working-with-excels/src/main/resources/import_mapping.yml
+  mode: DRY_RUN
+}

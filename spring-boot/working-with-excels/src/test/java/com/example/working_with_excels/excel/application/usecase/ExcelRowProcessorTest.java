@@ -66,9 +66,9 @@ class ExcelRowProcessorTest {
 
                         List<ColumnConfig> columns = List.of(
                                         new ColumnConfig("Name", ExcelColumnType.STRING, null, null,
-                                                        DbColumnMapping.of("user_name"), null, null),
+                                                        DbColumnMapping.of("user_name"), null, null, null),
                                         new ColumnConfig("Age", ExcelColumnType.INTEGER, null, null,
-                                                        DbColumnMapping.of("age"), null, null));
+                                                        DbColumnMapping.of("age"), null, null, null));
 
                         when(cellValidator.validate(any(), any())).thenReturn(null);
                         when(cellValidator.validateTransformedValue(any(), any())).thenReturn(null);
@@ -98,10 +98,10 @@ class ExcelRowProcessorTest {
 
                         List<ColumnConfig> columns = List.of(
                                         new ColumnConfig("Name", ExcelColumnType.STRING, null, null,
-                                                        DbColumnMapping.of("user_name"), null, null),
+                                                        DbColumnMapping.of("user_name"), null, null, null),
                                         new ColumnConfig("Notes", ExcelColumnType.STRING, null, null, null, null,
-                                                        null)); // No
-                                                                // mapping
+                                                        null, null)); // No
+                                                                      // mapping
 
                         when(cellValidator.validate(any(), any())).thenReturn(null);
                         when(cellValidator.validateTransformedValue(any(), any())).thenReturn(null);
@@ -130,7 +130,7 @@ class ExcelRowProcessorTest {
 
                         List<ColumnConfig> columns = List.of(
                                         new ColumnConfig("Email", ExcelColumnType.EMAIL, null, null,
-                                                        DbColumnMapping.of("email"), null, null));
+                                                        DbColumnMapping.of("email"), null, null, null));
 
                         when(cellValidator.validate(any(), any())).thenReturn("Invalid email format");
 
@@ -155,9 +155,9 @@ class ExcelRowProcessorTest {
 
                         List<ColumnConfig> columns = List.of(
                                         new ColumnConfig("Col1", ExcelColumnType.STRING, null, null,
-                                                        DbColumnMapping.of("col1"), null, null),
+                                                        DbColumnMapping.of("col1"), null, null, null),
                                         new ColumnConfig("Col2", ExcelColumnType.STRING, null, null,
-                                                        DbColumnMapping.of("col2"), null, null));
+                                                        DbColumnMapping.of("col2"), null, null, null));
 
                         when(cellValidator.validate(any(), any()))
                                         .thenReturn("Error 1")
@@ -188,7 +188,7 @@ class ExcelRowProcessorTest {
                         DbColumnMapping mapping = new DbColumnMapping("country_id", null, lookup);
                         List<ColumnConfig> columns = List.of(
                                         new ColumnConfig("Country", ExcelColumnType.STRING, null, null, mapping, null,
-                                                        null));
+                                                        null, null));
 
                         when(cellValidator.validate(any(), any())).thenReturn(null);
                         when(cellValidator.validateTransformedValue(any(), any())).thenReturn(null);
@@ -216,7 +216,7 @@ class ExcelRowProcessorTest {
                         DbColumnMapping mapping = new DbColumnMapping("country_id", null, lookup);
                         List<ColumnConfig> columns = List.of(
                                         new ColumnConfig("Country", ExcelColumnType.STRING, null, null, mapping, null,
-                                                        null));
+                                                        null, null));
 
                         when(cellValidator.validate(any(), any())).thenReturn(null);
                         when(cellValidator.validateTransformedValue(any(), any())).thenReturn(null);
@@ -243,7 +243,7 @@ class ExcelRowProcessorTest {
 
                         List<ColumnConfig> columns = List.of(
                                         new ColumnConfig("Name", ExcelColumnType.STRING, null, null,
-                                                        DbColumnMapping.of("name"), null, null));
+                                                        DbColumnMapping.of("name"), null, null, null));
 
                         when(cellValidator.validate(any(), any())).thenReturn(null);
                         when(cellValidator.validateTransformedValue(any(), any())).thenReturn(null);
@@ -272,7 +272,7 @@ class ExcelRowProcessorTest {
                         List<ColumnConfig> columns = List.of(
                                         new ColumnConfig("Status", ExcelColumnType.STRING, null, null,
                                                         DbColumnMapping.of("status"),
-                                                        List.of("Inactive", "Deleted"), null));
+                                                        List.of("Inactive", "Deleted"), null, null));
 
                         when(cellValueExtractor.extractTypedValue(eq(statusCell), any()))
                                         .thenReturn("Inactive");
@@ -295,7 +295,7 @@ class ExcelRowProcessorTest {
                         List<ColumnConfig> columns = List.of(
                                         new ColumnConfig("Status", ExcelColumnType.STRING, null, null,
                                                         DbColumnMapping.of("status"), List.of("Inactive"),
-                                                        null));
+                                                        null, null));
 
                         when(cellValidator.validate(any(), any())).thenReturn(null);
                         when(cellValidator.validateTransformedValue(any(), any())).thenReturn(null);
@@ -321,7 +321,7 @@ class ExcelRowProcessorTest {
 
                         List<ColumnConfig> columns = List.of(
                                         new ColumnConfig("Date", ExcelColumnType.DATE, null, null,
-                                                        DbColumnMapping.of("date"), null, expression));
+                                                        DbColumnMapping.of("date"), null, expression, null));
 
                         when(cellValueExtractor.extractTypedValue(eq(dateCell), any()))
                                         .thenReturn(java.time.LocalDate.now().plusDays(1));
@@ -345,9 +345,9 @@ class ExcelRowProcessorTest {
 
                         List<ColumnConfig> columns = List.of(
                                         new ColumnConfig("ColA", ExcelColumnType.STRING, null, null,
-                                                        DbColumnMapping.of("col_a"), null, null),
+                                                        DbColumnMapping.of("col_a"), null, null, null),
                                         new ColumnConfig("ColB", ExcelColumnType.INTEGER, null, null,
-                                                        DbColumnMapping.of("col_b"), null, null));
+                                                        DbColumnMapping.of("col_b"), null, null, null));
 
                         when(cellValueExtractor.extractTypedValue(eq(colACell), any())).thenReturn("Special");
                         when(cellValueExtractor.extractTypedValue(eq(colBCell), any())).thenReturn(100);
@@ -365,17 +365,50 @@ class ExcelRowProcessorTest {
                         // Assert
                         assertThat(result.skipped()).isTrue();
                 }
+
+                @Test
+                @DisplayName("should skip row when ANY of multiple skip expressions evaluates to true")
+                void shouldSkipRowWhenAnyOfMultipleExpressionsIsTrue() {
+                        // Arrange
+                        Row row = mock(Row.class);
+                        Cell statusCell = mock(Cell.class);
+                        when(row.getCell(0)).thenReturn(statusCell);
+
+                        List<ColumnConfig> columns = List.of(
+                                        new ColumnConfig("Status", ExcelColumnType.STRING, null, null,
+                                                        DbColumnMapping.of("status"), null, null, null));
+
+                        when(cellValueExtractor.extractTypedValue(eq(statusCell), any())).thenReturn("Archived");
+
+                        // Expressions:
+                        // 1. Skip if Status is 'Archived' (Should be true)
+                        // 2. Skip if Status is 'Deleted' (Should be false)
+                        List<String> skipExpressions = List.of(
+                                        "#Status == 'Archived'",
+                                        "#Status == 'Deleted'");
+
+                        com.example.working_with_excels.excel.domain.model.SheetConfig sheetConfig = new com.example.working_with_excels.excel.domain.model.SheetConfig(
+                                        "Sheet", columns, "Table",
+                                        null, null, null, null, skipExpressions, null);
+
+                        // Act
+                        RowProcessingResult result = rowProcessor.processRow(row, 2, sheetConfig);
+
+                        // Assert
+                        assertThat(result.skipped()).isTrue();
+                }
+
         }
 
         private com.example.working_with_excels.excel.domain.model.SheetConfig createSheetConfig(
                         List<ColumnConfig> columns) {
                 return new com.example.working_with_excels.excel.domain.model.SheetConfig("Sheet", columns, "Table",
-                                null, null, null, null, null);
+                                null, null, null, null, null, null);
         }
 
         private com.example.working_with_excels.excel.domain.model.SheetConfig createSheetConfigWithSkip(
                         List<ColumnConfig> columns, String skipExpression) {
                 return new com.example.working_with_excels.excel.domain.model.SheetConfig("Sheet", columns, "Table",
-                                null, null, null, skipExpression, null);
+                                null, null, null, skipExpression, null, null);
         }
 }

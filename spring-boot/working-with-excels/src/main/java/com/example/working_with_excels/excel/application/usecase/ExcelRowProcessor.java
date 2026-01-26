@@ -145,53 +145,85 @@ public class ExcelRowProcessor {
 
     private boolean evaluateSheetSkip(com.example.working_with_excels.excel.domain.model.SheetConfig sheetConfig,
             Map<String, Object> rowValues) {
+        StandardEvaluationContext context = new StandardEvaluationContext();
+        context.setRootObject(rowValues);
+        context.setVariable("dateTime", new com.example.working_with_excels.excel.application.util.DateTimeUtils());
+        context.setVariable("db", new DbHelper(databasePort));
+        rowValues.forEach(context::setVariable);
+
+        // Check single expression
         if (sheetConfig.skipExpression() != null && !sheetConfig.skipExpression().isBlank()) {
-            try {
-                StandardEvaluationContext context = new StandardEvaluationContext();
-                context.setRootObject(rowValues);
+            if (evaluateExpression(sheetConfig.skipExpression(), context)) {
+                return true;
+            }
+        }
 
-                context.setVariable("dateTime",
-                        new com.example.working_with_excels.excel.application.util.DateTimeUtils());
-                context.setVariable("db", new DbHelper(databasePort));
+        // Check list of expressions
+        if (sheetConfig.skipExpressions() != null) {
+            for (String expression : sheetConfig.skipExpressions()) {
+                if (expression != null && !expression.isBlank()) {
+                    if (evaluateExpression(expression, context)) {
+                        return true;
+                    }
+                }
+            }
+        }
 
-                // Add column values as variables for easier access (e.g. #ColName)
-                rowValues.forEach(context::setVariable);
+        return false;
+    }
 
-                Boolean result = parser.parseExpression(sheetConfig.skipExpression()).getValue(context, Boolean.class);
-                return Boolean.TRUE.equals(result);
-            } catch (Exception e) {
-                // Log and proceed (don't skip on error, safe default)
-                return false;
+    private boolean evaluateExpression(String expression, StandardEvaluationContext context) {
+        try {
+            Boolean result = parser.parseExpression(expression).getValue(context, Boolean.class);
+            return Boolean.TRUE.equals(result);
+        } catch (Exception e) {
+            // Log and proceed (don't skip on error, safe default)
+            return false;
+        }
+    }
+
+    private boolean shouldSkipColumn(Cell cell, ColumnConfig colConfig) {
+        if (shouldSkipByList(cell, colConfig)) {
+            return true;
+        }
+        return shouldSkipByExpression(cell, colConfig);
+    }
+
+    private boolean shouldSkipByList(Cell cell, ColumnConfig colConfig) {
+        if (colConfig.skipIf() == null || colConfig.skipIf().isEmpty()) {
+            return false;
+        }
+        Object cellValue = cellValueExtractor.extractTypedValue(cell, colConfig);
+        for (Object skipValue : colConfig.skipIf()) {
+            if (valuesMatch(cellValue, skipValue)) {
+                return true;
             }
         }
         return false;
     }
 
-    private boolean shouldSkipColumn(Cell cell, ColumnConfig colConfig) {
-        // 1. Check simple list-based skip
-        if (colConfig.skipIf() != null && !colConfig.skipIf().isEmpty()) {
-            Object cellValue = cellValueExtractor.extractTypedValue(cell, colConfig);
-            for (Object skipValue : colConfig.skipIf()) {
-                if (valuesMatch(cellValue, skipValue)) {
-                    return true;
-                }
-            }
+    private boolean shouldSkipByExpression(Cell cell, ColumnConfig colConfig) {
+        boolean hasSkipExpression = colConfig.skipExpression() != null && !colConfig.skipExpression().isBlank();
+        boolean hasSkipExpressions = colConfig.skipExpressions() != null && !colConfig.skipExpressions().isEmpty();
+
+        if (!hasSkipExpression && !hasSkipExpressions) {
+            return false;
         }
 
-        // 2. Check SpEL expression-based skip (column context)
-        if (colConfig.skipExpression() != null && !colConfig.skipExpression().isBlank()) {
-            Object cellValue = cellValueExtractor.extractTypedValue(cell, colConfig);
-            try {
-                StandardEvaluationContext context = new StandardEvaluationContext();
-                context.setRootObject(cellValue);
+        Object cellValue = cellValueExtractor.extractTypedValue(cell, colConfig);
+        StandardEvaluationContext context = new StandardEvaluationContext();
+        context.setRootObject(cellValue);
+        context.setVariable("dateTime", new com.example.working_with_excels.excel.application.util.DateTimeUtils());
 
-                context.setVariable("dateTime",
-                        new com.example.working_with_excels.excel.application.util.DateTimeUtils());
+        if (hasSkipExpression && evaluateExpression(colConfig.skipExpression(), context)) {
+            return true;
+        }
 
-                Boolean result = parser.parseExpression(colConfig.skipExpression()).getValue(context, Boolean.class);
-                return Boolean.TRUE.equals(result);
-            } catch (Exception e) {
-                return false;
+        if (hasSkipExpressions) {
+            for (String expression : colConfig.skipExpressions()) {
+                if (expression != null && !expression.isBlank() && evaluateExpression(expression, context)) {
+                    return true;
+                }
             }
         }
         return false;
@@ -225,8 +257,8 @@ public class ExcelRowProcessor {
         }
 
         // Handle numeric comparison specifically (e.g. 1 == 1.0)
-        if (cellValue instanceof Number && skipValue instanceof Number) {
-            return ((Number) cellValue).doubleValue() == ((Number) skipValue).doubleValue();
+        if (cellValue instanceof Number n1 && skipValue instanceof Number n2) {
+            return n1.doubleValue() == n2.doubleValue();
         }
 
         return cellValue.toString().equalsIgnoreCase(skipValue.toString());

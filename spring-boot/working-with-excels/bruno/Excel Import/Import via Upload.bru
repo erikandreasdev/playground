@@ -1,0 +1,21 @@
+meta {
+  name: Import via Upload
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{baseUrl}}/api/import/upload
+  body: multipartForm
+  auth: none
+}
+
+params:query {
+  mode: DRY_RUN
+}
+
+body:multipart-form {
+  excel: @file(/Users/erik/dev/playground/spring-boot/working-with-excels/src/main/resources/import_data.xlsx)
+  config: @file(/Users/erik/dev/playground/spring-boot/working-with-excels/src/main/resources/import_mapping.yml)
+  mode: DRY_RUN
+}

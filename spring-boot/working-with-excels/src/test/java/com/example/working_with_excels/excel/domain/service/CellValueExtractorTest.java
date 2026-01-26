@@ -210,7 +210,8 @@ class CellValueExtractorTest {
             Cell cell = mock(Cell.class);
             when(cellTransformer.transform(eq(cell), any())).thenReturn("Transformed Value");
 
-            ColumnConfig config = new ColumnConfig("Name", ExcelColumnType.STRING, null, List.of(), null, null, null);
+            ColumnConfig config = new ColumnConfig("Name", ExcelColumnType.STRING, null, List.of(), null, null, null,
+                    null);
 
             // Act
             Object result = extractor.extractTypedValue(cell, config);
@@ -230,7 +231,7 @@ class CellValueExtractorTest {
             List<ColumnTransformation> transformations = List.of(
                     ColumnTransformation.of(TransformerType.TRIM));
             ColumnConfig config = new ColumnConfig("Name", ExcelColumnType.STRING, null, transformations, null, null,
-                    null);
+                    null, null);
 
             // Act
             Object result = extractor.extractTypedValue(cell, config);
@@ -254,7 +255,8 @@ class CellValueExtractorTest {
             Cell cell = mock(Cell.class);
             when(cellTransformer.transform(eq(cell), any())).thenReturn("test@example.com");
 
-            ColumnConfig config = new ColumnConfig("Email", ExcelColumnType.EMAIL, null, List.of(), null, null, null);
+            ColumnConfig config = new ColumnConfig("Email", ExcelColumnType.EMAIL, null, List.of(), null, null, null,
+                    null);
 
             // Act
             Object result = extractor.extractTypedValue(cell, config);
