@@ -9,23 +9,32 @@ import java.util.List;
  * This record defines the expected sheet name, column configurations,
  * and database import settings for a sheet within an Excel file.
  *
- * @param name      the expected name of the Excel sheet
- * @param columns   the ordered list of column configurations
- * @param table     optional target database table name for imports
- * @param onError   optional error handling strategy (defaults to SKIP_ROW)
- * @param batchSize optional batch size for inserts (defaults to 100)
- * @param customSql optional custom SQL for complex insert logic
+ * @param name            the expected name of the Excel sheet
+ * @param columns         the ordered list of column configurations
+ * @param table           optional target database table name for imports
+ * @param onError         optional error handling strategy (defaults to
+ *                        SKIP_ROW)
+ * @param errorMessage    optional message to display when a sheet-level error
+ *                        occurs
+ * @param batchSize       optional batch size for inserts (defaults to 100)
+ * @param customSql       optional custom SQL for complex insert logic
+ * @param skipExpression  optional SpEL expression to skip rows
+ * @param skipExpressions optional list of SpEL expressions to skip rows
+ * @param primaryKey      optional list of columns forming the primary key
+ * @param rowConstraints  optional list of cross-column validation rules
  */
 public record SheetConfig(
         String name,
         List<ColumnConfig> columns,
         String table,
         ErrorStrategy onError,
+        String errorMessage,
         Integer batchSize,
         String customSql,
         String skipExpression,
         List<String> skipExpressions,
-        List<String> primaryKey) {
+        List<String> primaryKey,
+        List<RowConstraint> rowConstraints) {
 
     /** Default batch size for database inserts. */
     public static final int DEFAULT_BATCH_SIZE = 100;
@@ -73,5 +82,12 @@ public record SheetConfig(
      */
     public List<String> getEffectivePrimaryKey() {
         return primaryKey != null ? primaryKey : List.of();
+    }
+
+    /**
+     * Gets the row constraints, returning empty list if null.
+     */
+    public List<RowConstraint> getEffectiveRowConstraints() {
+        return rowConstraints != null ? rowConstraints : List.of();
     }
 }

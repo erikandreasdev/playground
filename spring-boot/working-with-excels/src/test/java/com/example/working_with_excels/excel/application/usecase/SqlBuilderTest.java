@@ -43,7 +43,7 @@ class SqlBuilderTest {
                                                         DbColumnMapping.of("age"), null, null, null));
 
                         SheetConfig sheetConfig = new SheetConfig("Users", columns, "APP_USERS",
-                                        null, null, null, null, null, null);
+                                        null, null, null, null, null, null, null, null);
 
                         // Act
                         String sql = sqlBuilder.buildInsertSql(sheetConfig);
@@ -67,7 +67,7 @@ class SqlBuilderTest {
                                                         DbColumnMapping.of("email"), null, null, null));
 
                         SheetConfig sheetConfig = new SheetConfig("Users", columns, "APP_USERS",
-                                        null, null, null, null, null, null);
+                                        null, null, null, null, null, null, null, null);
 
                         // Act
                         String sql = sqlBuilder.buildInsertSql(sheetConfig);
@@ -86,7 +86,7 @@ class SqlBuilderTest {
                                                         DbColumnMapping.of("id"), null, null, null));
 
                         SheetConfig sheetConfig = new SheetConfig("Data", columns, "SIMPLE_TABLE",
-                                        null, null, null, null, null, null);
+                                        null, null, null, null, null, null, null, null);
 
                         // Act
                         String sql = sqlBuilder.buildInsertSql(sheetConfig);
@@ -104,7 +104,7 @@ class SqlBuilderTest {
                                                         null, null));
 
                         SheetConfig sheetConfig = new SheetConfig("Data", columns, "TABLE",
-                                        null, null, null, null, null, null);
+                                        null, null, null, null, null, null, null, null);
 
                         // Act
                         String sql = sqlBuilder.buildInsertSql(sheetConfig);
@@ -124,7 +124,7 @@ class SqlBuilderTest {
                                                         DbColumnMapping.of("name"), null, null, null));
 
                         SheetConfig sheetConfig = new SheetConfig("Users", columns, "APP_USERS",
-                                        null, null, null, null, null, List.of("id"));
+                                        null, null, null, null, null, null, List.of("id"), null);
 
                         // Act
                         String sql = sqlBuilder.buildInsertSql(sheetConfig);

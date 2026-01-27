@@ -5,17 +5,21 @@ package com.example.working_with_excels.excel.domain.model;
  *
  * <p>
  * Defines how cell values should be stored in the target database table,
- * including optional type overrides and lookup configurations.
+ * including optional type overrides, lookup configurations, and pre-existence
+ * checks.
  *
  * @param dbColumn the target column name in the database table
  * @param dbType   optional database-specific type override (e.g., VARCHAR2,
  *                 NUMBER)
  * @param lookup   optional lookup configuration for resolving values to IDs
+ * @param existsIn optional configuration to validate value existence in a
+ *                 reference table
  */
 public record DbColumnMapping(
         String dbColumn,
         String dbType,
-        LookupConfig lookup) {
+        LookupConfig lookup,
+        ExistsInConfig existsIn) {
 
     /**
      * Creates a simple mapping with just the column name.
@@ -24,6 +28,6 @@ public record DbColumnMapping(
      * @return a new DbColumnMapping with no type override or lookup
      */
     public static DbColumnMapping of(String dbColumn) {
-        return new DbColumnMapping(dbColumn, null, null);
+        return new DbColumnMapping(dbColumn, null, null, null);
     }
 }

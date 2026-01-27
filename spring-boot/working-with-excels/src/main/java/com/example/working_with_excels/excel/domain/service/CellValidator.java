@@ -1,5 +1,8 @@
 package com.example.working_with_excels.excel.domain.service;
 
+import java.time.LocalDateTime;
+import java.util.List;
+
 import org.hibernate.validator.internal.constraintvalidators.bv.EmailValidator;
 
 import com.example.working_with_excels.excel.domain.model.ColumnConfig;
@@ -146,6 +149,18 @@ public class CellValidator {
             }
             if (validation.max() != null && value > validation.max()) {
                 return "Value " + value + " exceeds max " + validation.max();
+            }
+        }
+
+        // Date Validation (Past/Future)
+        if (cell.getCellType() == CellType.NUMERIC && DateUtil.isCellDateFormatted(cell)) {
+            LocalDateTime dateVal = cell.getLocalDateTimeCellValue();
+            LocalDateTime now = LocalDateTime.now();
+            if (Boolean.TRUE.equals(validation.past()) && !dateVal.isBefore(now)) {
+                return "Date must be in the past";
+            }
+            if (Boolean.TRUE.equals(validation.future()) && !dateVal.isAfter(now)) {
+                return "Date must be in the future";
             }
         }
 

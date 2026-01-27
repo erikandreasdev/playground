@@ -1,0 +1,113 @@
+# ============================================================================
+# Excel Import Configuration (Database Mapping)
+# Version: 1.1
+# Description: Defines how Excel data maps to database tables, including 
+#              lookup logic, constraints, and custom SQL instructions.
+# ============================================================================
+
+files:
+  - filename: "import_data.xlsx"
+    sheets:
+      # ========================================================================
+      # SHEET 1: Users (Standard Mapping)
+      # ========================================================================
+      - name: "Users"
+        table: "APP_USERS"
+        onError: SKIP_ROW
+        # errorMessage removed (redundant default provided by code)
+        batchSize: 100
+        primaryKey: ["User ID"] 
+        
+        # Row-level cross-column validation
+        rowConstraints:
+          # TAG-based constraint (predefined common logic)
+          - columns: ["Country", "Status"]
+            type: "NOT_ALL_EMPTY"
+            errorMessage: "Both Country and Status cannot be empty"
+          
+          # DYNAMIC Custom Expression (SpEL)
+          # Allows complex logic without code changes
+          - columns: ["Account Balance", "Status"]
+            type: "CUSTOM" # or omit type
+            expression: "#row['Status'] == 'ACTIVE' and #row['Account Balance'] < 0"
+            errorMessage: "Active users cannot have negative balance"
+
+        columns:
+          - name: "User ID"
+            dbMapping:
+              dbColumn: "USER_ID"
+
+          - name: "Full Name"
+            dbMapping: { dbColumn: "FULL_NAME" }
+
+          - name: "Email Address"
+            dbMapping: { dbColumn: "EMAIL" }
+
+          - name: "Birth Date"
+            dbMapping: { dbColumn: "BIRTH_DATE" }
+
+          - name: "Is Active"
+            dbMapping: { dbColumn: "IS_ACTIVE" }
+
+          - name: "Account Balance"
+            dbMapping: { dbColumn: "BALANCE" }
+
+          - name: "Country"
+            dbMapping:
+              dbColumn: "COUNTRY_ID"
+              # lookup implies existence check. 
+              # Use existsIn ONLY if you need to validate existence WITHOUT replacing the value (e.g. FK check but keeping original string).
+              lookup:
+                table: "COUNTRIES"
+                matchColumn: "NAME"
+                returnColumn: "ID"
+
+          - name: "Status"
+            dbMapping:
+              dbColumn: "STATUS_ID"
+              lookup:
+                table: "STATUS_TYPES"
+                matchColumn: "CODE"
+                returnColumn: "ID"
+
+      # ========================================================================
+      # SHEET 2: Products (Custom SQL)
+      # ========================================================================
+      - name: "Products"
+        table: "PRODUCTS"
+        onError: SKIP_ROW
+        batchSize: 200
+        
+        customSql: |
+          INSERT INTO PRODUCTS (
+            PRODUCT_ID, PRODUCT_NAME, DESCRIPTION, PRICE, CATEGORY_ID, SKU, CREATED_AT
+          ) VALUES (
+            PRODUCT_SEQ.NEXTVAL, 
+            :Product Name,
+            :Description, 
+            :Price, 
+            :Category, 
+            :SKU, 
+            SYSTIMESTAMP
+          )
+        
+        columns:
+          - name: "Product Name"
+            dbMapping: { dbColumn: "PRODUCT_NAME" }
+
+          - name: "Description"
+            dbMapping: { dbColumn: "DESCRIPTION" }
+
+          - name: "Price"
+            dbMapping: { dbColumn: "PRICE" }
+
+          - name: "Category"
+            dbMapping:
+              dbColumn: "CATEGORY_ID"
+              lookup:
+                table: "CATEGORIES"
+                matchColumn: "NAME"
+                returnColumn: "ID"
+
+          - name: "SKU"
+            dbMapping: { dbColumn: "SKU" }

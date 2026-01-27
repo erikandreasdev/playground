@@ -1,0 +1,74 @@
+# ============================================================================
+# Excel Structure Configuration (Validation-Only)
+# Version: 1.0
+# Description: Defines the expected structure, data types, and validation rules
+#              for Excel files. Used for validating data before import.
+# ============================================================================
+
+files:
+  # PRO TIP: Decouple 'filename' from actual files in code by using an identifier
+  # instead of a literal filename, allowing this config to apply to "users_*.xlsx".
+  - filename: "import_data.xlsx"
+    sheets:
+      - name: "Users"
+        # SECURITY WARNING: SpEL expressions can reference Java beans. 
+        # Ensure the evaluation context is restricted in production code.
+        skipExpression: "#row['Status'] == 'ARCHIVED'" 
+        columns:
+          - name: "User ID"
+            type: INTEGER
+            validation:
+              notEmpty: true
+              # 'skipIf' allows ignoring specific raw values (e.g. placeholders)
+            skipIf: ["N/A", "Unknown", "-"]
+
+          - name: "Full Name"
+            type: STRING
+            validation:
+              notEmpty: true
+              minLength: 2
+              maxLength: 100
+            transformations:
+              - type: TRIM
+              - type: NORMALIZE_SPACES
+              - type: TITLE_CASE
+            # SpEL uses the raw cell value as #root
+            skipExpression: "#root.startsWith('TEST-')"
+
+          - name: "Email Address"
+            type: EMAIL
+            validation:
+              notEmpty: true
+              # Regex for strict email validation (simplified example)
+              regex: "^[\\w-\\.]+@([\\w-]+\\.)+[\\w-]{2,4}$"
+            transformations:
+              - type: TRIM
+              - type: LOWERCASE
+
+          - name: "Birth Date"
+            type: DATE
+            validation:
+              # Ensure date is in the past
+              past: true
+
+          - name: "Is Active"
+            type: BOOLEAN
+
+          - name: "Account Balance"
+            type: DECIMAL
+            validation:
+              min: 0
+              max: 1000000
+
+          - name: "Country"
+            type: STRING
+            validation:
+              notEmpty: true
+
+          - name: "Status"
+            type: STRING
+            validation:
+              allowedValues: ["ACTIVE", "INACTIVE", "PENDING", "ARCHIVED"]
+            transformations:
+              - type: TRIM
+              - type: UPPERCASE

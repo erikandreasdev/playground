@@ -25,12 +25,23 @@ ImportReport report = importUseCase.importExcel(
 );
 ```
 
+### Bruno Collection
+
+A pre-configured **Bruno** collection is available in the `bruno/` directory. It includes:
+- **Local Environment**: Points to `http://localhost:8081`.
+- **Pre-built Requests**: Ready-to-use requests for all import endpoints (`Classpath`, `Filesystem`, `Upload`, `URL`).
+- **Sample Data**: Configured to use the sample files in `src/main/resources`.
+
+To use it:
+1. Open Bruno.
+2. Click "Open Collection".
+3. Select the `bruno` folder in this project.
+
+
 ### REST API Endpoints
 
 | Endpoint | Method | Description |
 |----------|--------|-------------|
-| `/api/import/dry-run` | GET | Quick test with default files (DRY_RUN) |
-| `/api/import/execute` | POST | Execute import with default files |
 | `/api/import/classpath` | POST | Import from classpath resources |
 | `/api/import/filesystem` | POST | Import from filesystem paths |
 | `/api/import/upload` | POST | Import via file upload (multipart) |
@@ -39,11 +50,11 @@ ImportReport report = importUseCase.importExcel(
 **Examples:**
 
 ```bash
-# Dry run test
-curl -s http://localhost:8081/api/import/dry-run | jq
+# Import from classpath (DRY_RUN)
+curl -X POST "http://localhost:8081/api/import/classpath?excel=import_data.xlsx&config=import_mapping.yml&mode=DRY_RUN"
 
-# Execute import
-curl -s -X POST http://localhost:8081/api/import/execute | jq
+# Execute import from filesystem
+curl -X POST "http://localhost:8081/api/import/filesystem?excelPath=/abs/path/to/data.xlsx&configPath=/abs/path/to/mapping.yml&mode=EXECUTE"
 
 # Upload files
 curl -X POST http://localhost:8081/api/import/upload \

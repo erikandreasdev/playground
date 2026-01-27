@@ -21,13 +21,15 @@ import java.util.List;
  * @param notEmpty       whether the cell value is required (cannot be blank)
  */
 public record ColumnValidation(
-        String regex,
-        String dateFormat,
-        Integer minLength,
-        Integer maxLength,
-        Double min,
-        Double max,
-        List<String> allowedValues,
-        List<String> excludedValues,
-        Boolean notEmpty) {
+                String regex,
+                String dateFormat,
+                Integer minLength,
+                Integer maxLength,
+                Double min,
+                Double max,
+                List<String> allowedValues,
+                List<String> excludedValues,
+                Boolean notEmpty,
+                Boolean past,
+                Boolean future) {
 }

@@ -46,6 +46,9 @@ class ExcelRowProcessorTest {
         @Mock
         private DatabasePort databasePort;
 
+        @Mock
+        private com.example.working_with_excels.excel.domain.service.ConstraintValidator constraintValidator;
+
         @InjectMocks
         private ExcelRowProcessor rowProcessor;
 
@@ -185,7 +188,7 @@ class ExcelRowProcessorTest {
                         when(row.getCell(0)).thenReturn(countryCell);
 
                         LookupConfig lookup = new LookupConfig("COUNTRIES", "CODE", "ID");
-                        DbColumnMapping mapping = new DbColumnMapping("country_id", null, lookup);
+                        DbColumnMapping mapping = new DbColumnMapping("country_id", null, lookup, null);
                         List<ColumnConfig> columns = List.of(
                                         new ColumnConfig("Country", ExcelColumnType.STRING, null, null, mapping, null,
                                                         null, null));
@@ -213,7 +216,7 @@ class ExcelRowProcessorTest {
                         when(row.getCell(0)).thenReturn(countryCell);
 
                         LookupConfig lookup = new LookupConfig("COUNTRIES", "CODE", "ID");
-                        DbColumnMapping mapping = new DbColumnMapping("country_id", null, lookup);
+                        DbColumnMapping mapping = new DbColumnMapping("country_id", null, lookup, null);
                         List<ColumnConfig> columns = List.of(
                                         new ColumnConfig("Country", ExcelColumnType.STRING, null, null, mapping, null,
                                                         null, null));
@@ -231,6 +234,72 @@ class ExcelRowProcessorTest {
                         assertThat(result.isValid()).isFalse();
                         assertThat(result.errors()).hasSize(1);
                         assertThat(result.errors().getFirst().errorMessage()).contains("Lookup failed");
+                }
+
+                @Test
+                @DisplayName("should fail validation when existsIn check fails")
+                void shouldFailWhenExistsInCheckFails() {
+                        // Arrange
+                        Row row = mock(Row.class);
+                        Cell roleCell = mock(Cell.class);
+                        when(row.getCell(0)).thenReturn(roleCell);
+
+                        com.example.working_with_excels.excel.domain.model.ExistsInConfig existsIn = new com.example.working_with_excels.excel.domain.model.ExistsInConfig(
+                                        "ROLES", "NAME", "Role must exist");
+
+                        DbColumnMapping mapping = new DbColumnMapping("role_id", null, null, existsIn);
+                        List<ColumnConfig> columns = List.of(
+                                        new ColumnConfig("Role", ExcelColumnType.STRING, null, null, mapping, null,
+                                                        null, null));
+
+                        when(cellValidator.validate(any(), any())).thenReturn(null);
+                        when(cellValidator.validateTransformedValue(any(), any())).thenReturn(null);
+                        when(cellValueExtractor.extractTypedValue(any(), any())).thenReturn("Admin");
+
+                        // Mock database lookup for existsIn (returns empty)
+                        when(databasePort.lookup("ROLES", "NAME", "Admin", "NAME")).thenReturn(Optional.empty());
+
+                        // Act
+                        RowProcessingResult result = rowProcessor.processRow(row, 2, createSheetConfig(columns));
+
+                        // Assert
+                        assertThat(result.isValid()).isFalse();
+                        assertThat(result.errors()).hasSize(1);
+                        assertThat(result.errors().getFirst().errorMessage()).isEqualTo("Role must exist");
+
+                        // Ensure main lookup wasn't called (since mapping.lookup is null anyway, but
+                        // checks flow)
+                }
+
+                @Test
+                @DisplayName("should pass validation when existsIn check succeeds")
+                void shouldPassWhenExistsInCheckSucceeds() {
+                        // Arrange
+                        Row row = mock(Row.class);
+                        Cell roleCell = mock(Cell.class);
+                        when(row.getCell(0)).thenReturn(roleCell);
+
+                        com.example.working_with_excels.excel.domain.model.ExistsInConfig existsIn = new com.example.working_with_excels.excel.domain.model.ExistsInConfig(
+                                        "ROLES", "NAME", null);
+
+                        DbColumnMapping mapping = new DbColumnMapping("role_id", null, null, existsIn);
+                        List<ColumnConfig> columns = List.of(
+                                        new ColumnConfig("Role", ExcelColumnType.STRING, null, null, mapping, null,
+                                                        null, null));
+
+                        when(cellValidator.validate(any(), any())).thenReturn(null);
+                        when(cellValidator.validateTransformedValue(any(), any())).thenReturn(null);
+                        when(cellValueExtractor.extractTypedValue(any(), any())).thenReturn("User");
+
+                        // Mock database lookup for existsIn (returns validation)
+                        when(databasePort.lookup("ROLES", "NAME", "User", "NAME")).thenReturn(Optional.of("User"));
+
+                        // Act
+                        RowProcessingResult result = rowProcessor.processRow(row, 2, createSheetConfig(columns));
+
+                        // Assert
+                        assertThat(result.isValid()).isTrue();
+                        assertThat(result.namedParams()).containsEntry("role_id", "User");
                 }
 
                 @Test
@@ -389,7 +458,7 @@ class ExcelRowProcessorTest {
 
                         com.example.working_with_excels.excel.domain.model.SheetConfig sheetConfig = new com.example.working_with_excels.excel.domain.model.SheetConfig(
                                         "Sheet", columns, "Table",
-                                        null, null, null, null, skipExpressions, null);
+                                        null, null, null, null, null, skipExpressions, null, null);
 
                         // Act
                         RowProcessingResult result = rowProcessor.processRow(row, 2, sheetConfig);
@@ -403,12 +472,12 @@ class ExcelRowProcessorTest {
         private com.example.working_with_excels.excel.domain.model.SheetConfig createSheetConfig(
                         List<ColumnConfig> columns) {
                 return new com.example.working_with_excels.excel.domain.model.SheetConfig("Sheet", columns, "Table",
-                                null, null, null, null, null, null);
+                                null, null, null, null, null, null, null, null);
         }
 
         private com.example.working_with_excels.excel.domain.model.SheetConfig createSheetConfigWithSkip(
                         List<ColumnConfig> columns, String skipExpression) {
                 return new com.example.working_with_excels.excel.domain.model.SheetConfig("Sheet", columns, "Table",
-                                null, null, null, skipExpression, null, null);
+                                null, null, null, null, skipExpression, null, null, null);
         }
 }

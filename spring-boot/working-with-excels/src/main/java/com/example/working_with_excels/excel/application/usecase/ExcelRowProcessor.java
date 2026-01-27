@@ -38,25 +38,9 @@ public class ExcelRowProcessor {
     private final CellValidator cellValidator;
     private final CellValueExtractor cellValueExtractor;
     private final DatabasePort databasePort;
+    private final com.example.working_with_excels.excel.domain.service.ConstraintValidator constraintValidator;
     private final org.springframework.expression.ExpressionParser parser = new org.springframework.expression.spel.standard.SpelExpressionParser();
 
-    /**
-     * Processes a single Excel row, extracting and validating all cell values.
-     *
-     * <p>
-     * For each column with a database mapping, this method:
-     * <ol>
-     * <li>Validates the raw cell value</li>
-     * <li>Extracts the typed value with transformations</li>
-     * <li>Validates the transformed value</li>
-     * <li>Resolves any lookup references</li>
-     * </ol>
-     *
-     * @param row       the Excel row to process
-     * @param rowNumber the 1-indexed row number (for error reporting)
-     * @param columns   the list of column configurations
-     * @return the processing result containing either named parameters or errors
-     */
     /**
      * Processes a single Excel row, extracting and validating all cell values.
      *
@@ -79,12 +63,19 @@ public class ExcelRowProcessor {
             com.example.working_with_excels.excel.domain.model.SheetConfig sheetConfig) {
         List<ColumnConfig> columns = sheetConfig.columns();
 
-        // 1. Pre-extract values for row-level skip evaluation
+        // 1. Pre-extract values for row-level skip evaluation and validation
         Map<String, Object> rowValues = extractRowValues(row, columns);
 
         // 2. Check Sheet-level SpEL skip expression
         if (evaluateSheetSkip(sheetConfig, rowValues)) {
             return RowProcessingResult.ofSkipped();
+        }
+
+        // 3. NEW: Check Row-level constraints (Tag/SpEL)
+        String constraintError = constraintValidator.validate(rowValues, sheetConfig.getEffectiveRowConstraints());
+        if (constraintError != null) {
+            return RowProcessingResult
+                    .invalid(List.of(ImportError.validation(rowNumber, "RowConstraint", constraintError)));
         }
 
         List<ImportError> errors = new ArrayList<>();
@@ -117,10 +108,28 @@ public class ExcelRowProcessor {
                 continue;
             }
 
+            // NEW: Check "existsIn" validation (before lookup)
+            com.example.working_with_excels.excel.domain.model.ExistsInConfig existsIn = colConfig.dbMapping()
+                    .existsIn();
+            if (existsIn != null && cellValue != null) {
+                Optional<Object> exists = databasePort.lookup(existsIn.table(), existsIn.column(), cellValue.toString(),
+                        existsIn.column());
+                if (exists.isEmpty()) {
+                    errors.add(ImportError.validation(rowNumber, colConfig.name(),
+                            existsIn.errorMessage() != null ? existsIn.errorMessage()
+                                    : "Value does not exist in " + existsIn.table()));
+                    continue; // Skip lookup if existence failed
+                }
+            }
+
             Object finalValue = resolveLookup(cellValue, colConfig.dbMapping(), rowNumber, colConfig.name(), errors);
-            if (finalValue == null && colConfig.dbMapping().lookup() != null) {
+            if (finalValue == null && colConfig.dbMapping().lookup() != null
+                    && errors.stream().anyMatch(e -> e.errorMessage().contains("Lookup failed"))) {
+                // If it was null because lookup failed (and error was added), continue.
                 continue;
             }
+            // If finalValue is null but no error (e.g. original was null and lookup
+            // respected it), proceed.
 
             namedParams.put(colConfig.dbMapping().dbColumn(), finalValue);
         }
@@ -137,6 +146,7 @@ public class ExcelRowProcessor {
         for (int i = 0; i < columns.size(); i++) {
             ColumnConfig colConfig = columns.get(i);
             Cell cell = row.getCell(i);
+
             Object val = cellValueExtractor.extractTypedValue(cell, colConfig);
             rowValues.put(colConfig.name(), val);
         }
