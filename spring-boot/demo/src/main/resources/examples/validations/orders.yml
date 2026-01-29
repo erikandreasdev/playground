@@ -1,0 +1,61 @@
+# ============================================================================
+# Orders Validation Configuration - Demonstrates dbLookup
+# ============================================================================
+# Load Order: 4 (Requires: customers)
+# This table has a foreign key to CUSTOMERS
+# Uses dbLookup to validate customer_id exists before inserting
+# ============================================================================
+
+sheets:
+  - name: "Orders"
+    columns:
+      - name: "Order ID"
+        required: true
+        rules:
+          - NOT_EMPTY
+      - name: "Customer ID"
+        required: true
+        rules:
+          - NOT_EMPTY
+        dbLookup:
+          table: "CUSTOMERS"
+          column: "customer_id"
+          errorMessage: "Customer ID does not exist. Please load customers first."
+      - name: "Order Date"
+        required: true
+        type: DATE
+        rules:
+          - NOT_EMPTY
+      - name: "Total Amount"
+        required: true
+        type: DECIMAL
+        rules:
+          - NOT_EMPTY
+      - name: "Status"
+        required: true
+        rules:
+          - NOT_EMPTY
+        allowedValues:
+          - "PENDING"
+          - "SHIPPED"
+          - "DELIVERED"
+          - "CANCELLED"
+      - name: "Shipping Address"
+        required: false
+    persistence:
+      tableName: "ORDERS"
+      upsert: true
+      primaryKey: "Order ID"
+      mappings:
+        - excelColumn: "Order ID"
+          dbColumn: "order_id"
+        - excelColumn: "Customer ID"
+          dbColumn: "customer_id"
+        - excelColumn: "Order Date"
+          dbColumn: "order_date"
+        - excelColumn: "Total Amount"
+          dbColumn: "total_amount"
+        - excelColumn: "Status"
+          dbColumn: "status"
+        - excelColumn: "Shipping Address"
+          dbColumn: "shipping_address"

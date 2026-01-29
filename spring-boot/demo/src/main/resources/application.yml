@@ -1,0 +1,11 @@
+spring:
+  application:
+    name: demo
+  datasource:
+    url: jdbc:oracle:thin:@localhost:1521/FREEPDB1
+    username: DEMO
+    password: passx
+    driver-class-name: oracle.jdbc.OracleDriver
+  sql:
+    init:
+      mode: never # Handled by docker-compose for now

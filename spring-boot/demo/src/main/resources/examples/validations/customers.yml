@@ -1,0 +1,62 @@
+# ============================================================================
+# Customers Validation Configuration
+# ============================================================================
+# Load Order: 2 (No dependencies)
+# This is a parent table with no foreign key dependencies
+# ============================================================================
+
+sheets:
+  - name: "Customers"
+    columns:
+      - name: "Customer ID"
+        required: true
+        rules:
+          - NOT_EMPTY
+      - name: "First Name"
+        required: true
+        rules:
+          - NOT_EMPTY
+      - name: "Last Name"
+        required: true
+        rules:
+          - NOT_EMPTY
+      - name: "Email"
+        required: true
+        type: EMAIL
+        rules:
+          - NOT_EMPTY
+          - EMAIL_FORMAT
+      - name: "Phone"
+        required: false
+      - name: "Registration Date"
+        required: true
+        type: DATE
+        rules:
+          - NOT_EMPTY
+      - name: "Status"
+        required: true
+        rules:
+          - NOT_EMPTY
+        allowedValues:
+          - "ACTIVE"
+          - "INACTIVE"
+          - "SUSPENDED"
+    persistence:
+      tableName: "CUSTOMERS"
+      upsert: true
+      primaryKey: "Customer ID"
+      mappings:
+        - excelColumn: "Customer ID"
+          dbColumn: "customer_id"
+        - excelColumn: "First Name"
+          dbColumn: "first_name"
+        - excelColumn: "Last Name"
+          dbColumn: "last_name"
+        - excelColumn: "Email"
+          dbColumn: "email"
+        - excelColumn: "Phone"
+          dbColumn: "phone"
+        - excelColumn: "Registration Date"
+          dbColumn: "registration_date"
+        - excelColumn: "Status"
+          dbColumn: "status"

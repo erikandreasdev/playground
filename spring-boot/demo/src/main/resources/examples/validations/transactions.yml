@@ -1,0 +1,27 @@
+sheets:
+  - name: "Transactions"
+    columns:
+      - name: "SKU"
+        required: true
+        rules:
+          - NOT_EMPTY
+      - name: "Quantity"
+        required: true
+        type: NUMBER
+        rules:
+          - NOT_EMPTY
+      - name: "Transaction Date"
+        required: true
+        rules:
+          - NOT_EMPTY
+    persistence:
+      tableName: "TRANSACTIONS"
+      upsert: true
+      primaryKey: "SKU"
+      mappings:
+        - excelColumn: "SKU"
+          dbColumn: "sku"
+        - excelColumn: "Quantity"
+          dbColumn: "quantity"
+        - excelColumn: "Transaction Date"
+          dbColumn: "transaction_date"

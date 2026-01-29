@@ -1,0 +1,208 @@
+sheets:
+  - name: "Users"
+    columns:
+      - name: "ID"
+        required: true
+        rules:
+          - NOT_EMPTY
+      - name: "Full Name"
+        required: true
+        rules:
+          - NOT_EMPTY
+      - name: "Email"
+        required: true
+        type: EMAIL
+        rules:
+          - NOT_EMPTY
+          - EMAIL_FORMAT
+      - name: "Department ID"
+        required: true
+        type: NUMBER
+        rules:
+          - NOT_EMPTY
+        # NEW: Database lookup validation
+        # Validates that the Department ID exists in the departments table
+        dbLookup:
+          table: "DEPARTMENTS"
+          column: "ID"
+          errorMessage: "Department does not exist in the system"
+      - name: "Birthday"
+        required: true
+        type: DATE
+        rules:
+          - NOT_EMPTY
+      - name: "Active"
+        required: true
+        type: BOOLEAN
+        allowedValues: ["TRUE", "FALSE"]
+        rules:
+          - NOT_EMPTY
+      - name: "Age"
+        required: false
+        type: NUMBER
+        rules:
+          - NOT_EMPTY
+    persistence:
+      tableName: "users"
+      upsert: true
+      primaryKey: "ID"
+      mappings:
+        - excelColumn: "ID"
+          dbColumn: "id"
+        - excelColumn: "Full Name"
+          dbColumn: "full_name"
+        - excelColumn: "Email"
+          dbColumn: "email"
+        - excelColumn: "Birthday"
+          dbColumn: "birthday"
+        - excelColumn: "Active"
+          dbColumn: "active"
+        - excelColumn: "Age"
+          dbColumn: "age"
+  - name: "Products"
+    columns:
+      - name: "SKU"
+        required: true
+        rules:
+          - NOT_EMPTY
+      - name: "Product Name"
+        required: true
+        rules:
+          - NOT_EMPTY
+      - name: "Price"
+        required: true
+        type: DECIMAL
+        rules:
+          - NOT_EMPTY
+      - name: "In Stock"
+        required: true
+        type: BOOLEAN
+        rules:
+          - NOT_EMPTY
+      - name: "Category"
+        required: false
+        rules:
+          - NOT_EMPTY
+      - name: "Rating"
+        required: false
+        type: NUMBER
+        rules:
+          - NOT_EMPTY
+    persistence:
+      tableName: "products"
+      upsert: true
+      primaryKey: "SKU"
+      mappings:
+        - excelColumn: "SKU"
+          dbColumn: "sku"
+        - excelColumn: "Product Name"
+          dbColumn: "product_name"
+        - excelColumn: "Price"
+          dbColumn: "price"
+        - excelColumn: "In Stock"
+          dbColumn: "in_stock"
+        - excelColumn: "Category"
+          dbColumn: "category"
+        - excelColumn: "Rating"
+          dbColumn: "rating"
+  - name: "Transactions"
+    columns:
+      - name: "Transaction UUID"
+        required: true
+        type: UUID
+        rules:
+          - NOT_EMPTY
+      - name: "Amount"
+        required: true
+        type: DECIMAL
+        rules:
+          - NOT_EMPTY
+      - name: "Currency"
+        required: true
+        allowedValues: ["USD", "EUR", "GHC", "GBP"]
+        rules:
+          - NOT_EMPTY
+      - name: "Timestamp"
+        required: true
+        type: DATE
+        rules:
+          - NOT_EMPTY
+      - name: "Card Type"
+        required: false
+        allowedValues: ["visa"]
+        rules:
+          - NOT_EMPTY
+      - name: "Is Refundable"
+        required: false
+        type: BOOLEAN
+        rules:
+          - NOT_EMPTY
+    persistence:
+      tableName: "transactions"
+      upsert: true
+      primaryKey: "TRANSACTION_UUID"
+      mappings:
+        - excelColumn: "Transaction UUID"
+          dbColumn: "transaction_uuid"
+        - excelColumn: "Amount"
+          dbColumn: "amount"
+        - excelColumn: "Currency"
+          dbColumn: "currency"
+        - excelColumn: "Timestamp"
+          dbColumn: "timestamp"
+        - excelColumn: "Card Type"
+          dbColumn: "card_type"
+        - excelColumn: "Is Refundable"
+          dbColumn: "is_refundable"
+  - name: "Logistics"
+    columns:
+      - name: "Tracking Number"
+        required: true
+        rules:
+          - NOT_EMPTY
+      - name: "Origin City"
+        required: true
+        rules:
+          - NOT_EMPTY
+      - name: "Destination City"
+        required: true
+        rules:
+          - NOT_EMPTY
+      - name: "Shipping Method"
+        required: true
+        allowedValues: ["Air", "Land", "Sea"]
+        rules:
+          - NOT_EMPTY
+      - name: "Latitude"
+        required: false
+        type: DECIMAL
+        rules:
+          - NOT_EMPTY
+      - name: "Longitude"
+        required: false
+        type: DECIMAL
+        rules:
+          - NOT_EMPTY
+      - name: "Weight (kg)"
+        required: false
+        type: NUMBER
+        rules:
+          - NOT_EMPTY
+    persistence:
+      tableName: "logistics"
+      upsert: false
+      mappings:
+        - excelColumn: "Tracking Number"
+          dbColumn: "tracking_number"
+        - excelColumn: "Origin City"
+          dbColumn: "origin_city"
+        - excelColumn: "Destination City"
+          dbColumn: "destination_city"
+        - excelColumn: "Shipping Method"
+          dbColumn: "shipping_method"
+        - excelColumn: "Latitude"
+          dbColumn: "latitude"
+        - excelColumn: "Longitude"
+          dbColumn: "longitude"
+        - excelColumn: "Weight (kg)"
+          dbColumn: "weight_kg"

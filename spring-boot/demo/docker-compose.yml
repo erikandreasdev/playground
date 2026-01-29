@@ -1,0 +1,12 @@
+services:
+  oracle:
+    image: gvenzl/oracle-free:latest
+    container_name: oracle-demo
+    environment:
+      ORACLE_PASSWORD: "passx"
+      APP_USER: "DEMO"
+      APP_USER_PASSWORD: "passx"
+    ports:
+      - "1521:1521"
+    volumes:
+      - ./init-db.sql:/container-entrypoint-initdb.d/init-db.sql

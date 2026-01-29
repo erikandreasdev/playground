@@ -1,0 +1,255 @@
+# ============================================================================
+# E-Commerce Validation Configuration
+# ============================================================================
+# Combined validation for all e-commerce tables.
+# Defines sheets, columns, validation rules, and persistence mappings.
+# ============================================================================
+
+sheets:
+  # 1. Categories (Parent Table)
+  - name: "Categories"
+    columns:
+      - name: "Category ID"
+        required: true
+        rules:
+          - NOT_EMPTY
+      - name: "Category Name"
+        required: true
+        rules:
+          - NOT_EMPTY
+      - name: "Description"
+        required: false
+    persistence:
+      tableName: "CATEGORIES"
+      upsert: true
+      primaryKey: "Category ID"
+      mappings:
+        - excelColumn: "Category ID"
+          dbColumn: "category_id"
+        - excelColumn: "Category Name"
+          dbColumn: "category_name"
+        - excelColumn: "Description"
+          dbColumn: "description"
+
+  # 2. Customers (Parent Table)
+  - name: "Customers"
+    columns:
+      - name: "Customer ID"
+        required: true
+        rules:
+          - NOT_EMPTY
+      - name: "First Name"
+        required: true
+        rules:
+          - NOT_EMPTY
+      - name: "Last Name"
+        required: true
+        rules:
+          - NOT_EMPTY
+      - name: "Email"
+        required: true
+        type: EMAIL
+        rules:
+          - NOT_EMPTY
+          - EMAIL_FORMAT
+      - name: "Phone"
+        required: false
+      - name: "Registration Date"
+        required: true
+        type: DATE
+        rules:
+          - NOT_EMPTY
+      - name: "Status"
+        required: true
+        rules:
+          - NOT_EMPTY
+        allowedValues:
+          - "ACTIVE"
+          - "INACTIVE"
+          - "SUSPENDED"
+    persistence:
+      tableName: "CUSTOMERS"
+      upsert: true
+      primaryKey: "Customer ID"
+      mappings:
+        - excelColumn: "Customer ID"
+          dbColumn: "customer_id"
+        - excelColumn: "First Name"
+          dbColumn: "first_name"
+        - excelColumn: "Last Name"
+          dbColumn: "last_name"
+        - excelColumn: "Email"
+          dbColumn: "email"
+        - excelColumn: "Phone"
+          dbColumn: "phone"
+        - excelColumn: "Registration Date"
+          dbColumn: "registration_date"
+        - excelColumn: "Status"
+          dbColumn: "status"
+
+  # 3. Products (Child of Categories)
+  - name: "Products"
+    columns:
+      - name: "Product ID"
+        required: true
+        rules:
+          - NOT_EMPTY
+      - name: "Product Name"
+        required: true
+        rules:
+          - NOT_EMPTY
+      - name: "Category ID"
+        required: true
+        rules:
+          - NOT_EMPTY
+        dbLookup:
+          table: "CATEGORIES"
+          column: "category_id"
+          errorMessage: "Category ID does not exist. Please load categories first."
+      - name: "Price"
+        required: true
+        type: DECIMAL
+        rules:
+          - NOT_EMPTY
+      - name: "Stock Quantity"
+        required: true
+        type: NUMBER
+        rules:
+          - NOT_EMPTY
+      - name: "Rating"
+        required: false
+        type: DECIMAL
+      - name: "Is Active"
+        required: true
+        type: BOOLEAN
+        rules:
+          - NOT_EMPTY
+    persistence:
+      tableName: "PRODUCTS"
+      upsert: true
+      primaryKey: "Product ID"
+      mappings:
+        - excelColumn: "Product ID"
+          dbColumn: "product_id"
+        - excelColumn: "Product Name"
+          dbColumn: "product_name"
+        - excelColumn: "Category ID"
+          dbColumn: "category_id"
+        - excelColumn: "Price"
+          dbColumn: "price"
+        - excelColumn: "Stock Quantity"
+          dbColumn: "stock_quantity"
+        - excelColumn: "Rating"
+          dbColumn: "rating"
+        - excelColumn: "Is Active"
+          dbColumn: "is_active"
+
+  # 4. Orders (Child of Customers)
+  - name: "Orders"
+    columns:
+      - name: "Order ID"
+        required: true
+        rules:
+          - NOT_EMPTY
+      - name: "Customer ID"
+        required: true
+        rules:
+          - NOT_EMPTY
+        dbLookup:
+          table: "CUSTOMERS"
+          column: "customer_id"
+          errorMessage: "Customer ID does not exist. Please load customers first."
+      - name: "Order Date"
+        required: true
+        type: DATE
+        rules:
+          - NOT_EMPTY
+      - name: "Total Amount"
+        required: true
+        type: DECIMAL
+        rules:
+          - NOT_EMPTY
+      - name: "Status"
+        required: true
+        rules:
+          - NOT_EMPTY
+        allowedValues:
+          - "PENDING"
+          - "SHIPPED"
+          - "DELIVERED"
+          - "CANCELLED"
+      - name: "Shipping Address"
+        required: false
+    persistence:
+      tableName: "ORDERS"
+      upsert: true
+      primaryKey: "Order ID"
+      mappings:
+        - excelColumn: "Order ID"
+          dbColumn: "order_id"
+        - excelColumn: "Customer ID"
+          dbColumn: "customer_id"
+        - excelColumn: "Order Date"
+          dbColumn: "order_date"
+        - excelColumn: "Total Amount"
+          dbColumn: "total_amount"
+        - excelColumn: "Status"
+          dbColumn: "status"
+        - excelColumn: "Shipping Address"
+          dbColumn: "shipping_address"
+
+  # 5. Order Items (Child of Orders and Products)
+  - name: "Order Items"
+    columns:
+      - name: "Order Item ID"
+        required: true
+        rules:
+          - NOT_EMPTY
+      - name: "Order ID"
+        required: true
+        rules:
+          - NOT_EMPTY
+        dbLookup:
+          table: "ORDERS"
+          column: "order_id"
+          errorMessage: "Order ID does not exist. Please load orders first."
+      - name: "Product ID"
+        required: true
+        rules:
+          - NOT_EMPTY
+        dbLookup:
+          table: "PRODUCTS"
+          column: "product_id"
+          errorMessage: "Product ID does not exist. Please load products first."
+      - name: "Quantity"
+        required: true
+        type: NUMBER
+        rules:
+          - NOT_EMPTY
+      - name: "Unit Price"
+        required: true
+        type: DECIMAL
+        rules:
+          - NOT_EMPTY
+      - name: "Subtotal"
+        required: true
+        type: DECIMAL
+        rules:
+          - NOT_EMPTY
+    persistence:
+      tableName: "ORDER_ITEMS"
+      upsert: true
+      primaryKey: "Order Item ID"
+      mappings:
+        - excelColumn: "Order Item ID"
+          dbColumn: "order_item_id"
+        - excelColumn: "Order ID"
+          dbColumn: "order_id"
+        - excelColumn: "Product ID"
+          dbColumn: "product_id"
+        - excelColumn: "Quantity"
+          dbColumn: "quantity"
+        - excelColumn: "Unit Price"
+          dbColumn: "unit_price"
+        - excelColumn: "Subtotal"
+          dbColumn: "subtotal"

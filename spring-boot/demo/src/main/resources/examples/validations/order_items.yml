@@ -1,0 +1,63 @@
+# ============================================================================
+# Order Items Validation Configuration - Demonstrates Composite dbLookup
+# ============================================================================
+# Load Order: 5 (Requires: orders AND products)
+# This table has foreign keys to both ORDERS and PRODUCTS
+# Uses dbLookup to validate both order_id and product_id exist
+# ============================================================================
+
+sheets:
+  - name: "Order Items"
+    columns:
+      - name: "Order Item ID"
+        required: true
+        rules:
+          - NOT_EMPTY
+      - name: "Order ID"
+        required: true
+        rules:
+          - NOT_EMPTY
+        dbLookup:
+          table: "ORDERS"
+          column: "order_id"
+          errorMessage: "Order ID does not exist. Please load orders first."
+      - name: "Product ID"
+        required: true
+        rules:
+          - NOT_EMPTY
+        dbLookup:
+          table: "PRODUCTS"
+          column: "product_id"
+          errorMessage: "Product ID does not exist. Please load products first."
+      - name: "Quantity"
+        required: true
+        type: NUMBER
+        rules:
+          - NOT_EMPTY
+      - name: "Unit Price"
+        required: true
+        type: DECIMAL
+        rules:
+          - NOT_EMPTY
+      - name: "Subtotal"
+        required: true
+        type: DECIMAL
+        rules:
+          - NOT_EMPTY
+    persistence:
+      tableName: "ORDER_ITEMS"
+      upsert: true
+      primaryKey: "Order Item ID"
+      mappings:
+        - excelColumn: "Order Item ID"
+          dbColumn: "order_item_id"
+        - excelColumn: "Order ID"
+          dbColumn: "order_id"
+        - excelColumn: "Product ID"
+          dbColumn: "product_id"
+        - excelColumn: "Quantity"
+          dbColumn: "quantity"
+        - excelColumn: "Unit Price"
+          dbColumn: "unit_price"
+        - excelColumn: "Subtotal"
+          dbColumn: "subtotal"

@@ -1,0 +1,64 @@
+# ============================================================================
+# Products Validation Configuration - Demonstrates dbLookup
+# ============================================================================
+# Load Order: 3 (Requires: categories)
+# This table has a foreign key to CATEGORIES
+# Uses dbLookup to validate category_id exists before inserting
+# ============================================================================
+
+sheets:
+  - name: "Products"
+    columns:
+      - name: "Product ID"
+        required: true
+        rules:
+          - NOT_EMPTY
+      - name: "Product Name"
+        required: true
+        rules:
+          - NOT_EMPTY
+      - name: "Category ID"
+        required: true
+        rules:
+          - NOT_EMPTY
+        dbLookup:
+          table: "CATEGORIES"
+          column: "category_id"
+          errorMessage: "Category ID does not exist. Please load categories first."
+      - name: "Price"
+        required: true
+        type: DECIMAL
+        rules:
+          - NOT_EMPTY
+      - name: "Stock Quantity"
+        required: true
+        type: NUMBER
+        rules:
+          - NOT_EMPTY
+      - name: "Rating"
+        required: false
+        type: DECIMAL
+      - name: "Is Active"
+        required: true
+        type: BOOLEAN
+        rules:
+          - NOT_EMPTY
+    persistence:
+      tableName: "PRODUCTS"
+      upsert: true
+      primaryKey: "Product ID"
+      mappings:
+        - excelColumn: "Product ID"
+          dbColumn: "product_id"
+        - excelColumn: "Product Name"
+          dbColumn: "product_name"
+        - excelColumn: "Category ID"
+          dbColumn: "category_id"
+        - excelColumn: "Price"
+          dbColumn: "price"
+        - excelColumn: "Stock Quantity"
+          dbColumn: "stock_quantity"
+        - excelColumn: "Rating"
+          dbColumn: "rating"
+        - excelColumn: "Is Active"
+          dbColumn: "is_active"

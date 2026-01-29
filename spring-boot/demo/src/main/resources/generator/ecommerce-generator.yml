@@ -1,0 +1,164 @@
+# ============================================================================
+# Excel Generator Configuration for E-Commerce Example
+# ============================================================================
+# This configuration generates an Excel file with 5 sheets containing fake data
+# that matches the database schema and validation rules.
+# ============================================================================
+
+filename: "ecommerce-data.xlsx"
+
+sheets:
+  # ============================================================================
+  # Sheet 1: Categories (Parent table - no dependencies)
+  # ============================================================================
+  - name: "Categories"
+    rowCount: 5
+    columns:
+      - name: "Category ID"
+        fakerType: "sequence_id"  # CAT001, CAT002, etc.
+      - name: "Category Name"
+        allowedValues:
+          - "Electronics"
+          - "Clothing"
+          - "Books"
+          - "Home & Garden"
+          - "Sports & Outdoors"
+      - name: "Description"
+        fakerType: "lorem"
+        
+  # ============================================================================
+  # Sheet 2: Customers (Parent table - no dependencies)
+  # ============================================================================
+  - name: "Customers"
+    rowCount: 10
+    columns:
+      - name: "Customer ID"
+        fakerType: "sequence_id"  # CUST001,CUST002, etc.
+      - name: "First Name"
+        fakerType: "firstname"
+      - name: "Last Name"
+        fakerType: "lastname"
+      - name: "Email"
+        fakerType: "email"
+      - name: "Phone"
+        fakerType: "phone"
+      - name: "Registration Date"
+        fakerType: "past_date"
+        format: "yyyy-MM-dd"
+      - name: "Status"
+        allowedValues:
+          - "ACTIVE"
+          - "INACTIVE"
+          - "SUSPENDED"
+          
+  # ============================================================================
+  # Sheet 3: Products (Child of Categories)
+  # ============================================================================
+  - name: "Products"
+    rowCount: 20
+    columns:
+      - name: "Product ID"
+        fakerType: "sequence_id"  # PROD001, PROD002, etc.
+      - name: "Product Name"
+        fakerType: "product_name"
+      - name: "Category ID"
+        allowedValues:  # Must match Category IDs from sheet 1
+          - "ID001"  # Electronics
+          - "ID002"  # Clothing
+          - "ID003"  # Books
+          - "ID004"  # Home & Garden
+          - "ID005"  # Sports & Outdoors
+      - name: "Price"
+        fakerType: "decimal"
+        min: 10
+        max: 1000
+      - name: "Stock Quantity"
+        fakerType: "number"
+        min: 0
+        max: 500
+      - name: "Rating"
+        fakerType: "rating"
+      - name: "Is Active"
+        fakerType: "boolean"
+        
+  # ============================================================================
+  # Sheet 4: Orders (Child of Customers)
+  # ============================================================================
+  - name: "Orders"
+    rowCount: 15
+    columns:
+      - name: "Order ID"
+        fakerType: "sequence_id"  # ORD001, ORD002, etc.
+      - name: "Customer ID"
+        allowedValues:  # Must match Customer IDs from sheet 2
+          - "ID001"
+          - "ID002"
+          - "ID003"
+          - "ID004"
+          - "ID005"
+          - "ID006"
+          - "ID007"
+          - "ID008"
+          - "ID009"
+          - "ID010"
+      - name: "Order Date"
+        fakerType: "past_date"
+        format: "yyyy-MM-dd"
+      - name: "Total Amount"
+        fakerType: "decimal"
+        min: 50
+        max: 5000
+      - name: "Status"
+        fakerType: "order_status"
+      - name: "Shipping Address"
+        fakerType: "address"
+        
+  # ============================================================================
+  # Sheet 5: Order Items (Grandchild - references Orders and Products)
+  # ============================================================================
+  - name: "Order Items"
+    rowCount: 30
+    columns:
+      - name: "Order Item ID"
+        fakerType: "sequence_id"  # ITEM001, ITEM002, etc.
+      - name: "Order ID"
+        allowedValues:  # Must match Order IDs from sheet 4
+          - "ID001"
+          - "ID002"
+          - "ID003"
+          - "ID004"
+          - "ID005"
+          - "ID006"
+          - "ID007"
+          - "ID008"
+          - "ID009"
+          - "ID010"
+          - "ID011"
+          - "ID012"
+          - "ID013"
+          - "ID014"
+          - "ID015"
+      - name: "Product ID"
+        allowedValues:  # Must match Product IDs from sheet 3 (first 10 for simplicity)
+          - "ID001"
+          - "ID002"
+          - "ID003"
+          - "ID004"
+          - "ID005"
+          - "ID006"
+          - "ID007"
+          - "ID008"
+          - "ID009"
+          - "ID010"
+      - name: "Quantity"
+        fakerType: "number"
+        min: 1
+        max: 10
+      - name: "Unit Price"
+        fakerType: "decimal"
+        min: 10
+        max: 500
+      - name: "Subtotal"
+        fakerType: "decimal"
+        min: 10
+        max: 2000

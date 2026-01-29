@@ -1,0 +1,31 @@
+# ============================================================================
+# Categories Validation Configuration
+# ============================================================================
+# Load Order: 1 (No dependencies)
+# This is a parent table with no foreign key dependencies
+# ============================================================================
+
+sheets:
+  - name: "Categories"
+    columns:
+      - name: "Category ID"
+        required: true
+        rules:
+          - NOT_EMPTY
+      - name: "Category Name"
+        required: true
+        rules:
+          - NOT_EMPTY
+      - name: "Description"
+        required: false
+    persistence:
+      tableName: "CATEGORIES"
+      upsert: true
+      primaryKey: "Category ID"
+      mappings:
+        - excelColumn: "Category ID"
+          dbColumn: "category_id"
+        - excelColumn: "Category Name"
+          dbColumn: "category_name"
+        - excelColumn: "Description"
+          dbColumn: "description"
