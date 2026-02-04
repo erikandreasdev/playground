@@ -44,8 +44,8 @@ public class ExcelValidationController {
       @org.springframework.web.bind.annotation.RequestParam String validationsFilename,
       @org.springframework.web.bind.annotation.RequestParam(defaultValue = "false")
           boolean persist) {
-    LoadedResource excelResource = resourceLoaderService.loadResource(excelFilename);
-    LoadedResource configResource = resourceLoaderService.loadResource(validationsFilename);
+    LoadedResource excelResource = resourceLoaderService.loadExcelFile(excelFilename);
+    LoadedResource configResource = resourceLoaderService.loadMappingFile(validationsFilename);
 
     ValidationReport report =
         excelValidationService.validate(excelResource, configResource, persist);
@@ -60,9 +60,9 @@ public class ExcelValidationController {
    */
   @PostMapping("/validate")
   public ResponseEntity<ValidationReport> validatePost(@RequestBody ValidationRequest request) {
-    LoadedResource excelResource = resourceLoaderService.loadResource(request.excelFilename());
+    LoadedResource excelResource = resourceLoaderService.loadExcelFile(request.excelFilename());
     LoadedResource configResource =
-        resourceLoaderService.loadResource(request.validationsFilename());
+        resourceLoaderService.loadMappingFile(request.validationsFilename());
 
     ValidationReport report =
         excelValidationService.validate(excelResource, configResource, request.persist());

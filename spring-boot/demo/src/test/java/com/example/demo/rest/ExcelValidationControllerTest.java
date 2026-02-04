@@ -41,7 +41,8 @@ class ExcelValidationControllerTest {
             SourceType.FILESYSTEM,
             org.springframework.http.MediaType.APPLICATION_OCTET_STREAM,
             new org.springframework.core.io.ByteArrayResource(new byte[0]));
-    when(resourceLoaderService.loadResource(any())).thenReturn(mockResource);
+    when(resourceLoaderService.loadExcelFile(any())).thenReturn(mockResource);
+    when(resourceLoaderService.loadMappingFile(any())).thenReturn(mockResource);
 
     ValidationReport report =
         new ValidationReport(
@@ -72,7 +73,8 @@ class ExcelValidationControllerTest {
             SourceType.FILESYSTEM,
             org.springframework.http.MediaType.APPLICATION_OCTET_STREAM,
             new org.springframework.core.io.ByteArrayResource(new byte[0]));
-    when(resourceLoaderService.loadResource(any())).thenReturn(mockResource);
+    when(resourceLoaderService.loadExcelFile(any())).thenReturn(mockResource);
+    when(resourceLoaderService.loadMappingFile(any())).thenReturn(mockResource);
 
     ValidationReport report =
         new ValidationReport(
@@ -99,7 +101,7 @@ class ExcelValidationControllerTest {
 
   @Test
   void validate_shouldReturnNotFound_whenResourceMissing() throws Exception {
-    when(resourceLoaderService.loadResource(any()))
+    when(resourceLoaderService.loadExcelFile(any()))
         .thenThrow(new com.example.demo.exception.ResourceNotFoundException("File not found"));
 
     ValidationRequest request = new ValidationRequest("missing.xlsx", "config.yml", false);
@@ -114,7 +116,7 @@ class ExcelValidationControllerTest {
 
   @Test
   void validate_shouldReturnBadRequest_whenInputInvalid() throws Exception {
-    when(resourceLoaderService.loadResource(any()))
+    when(resourceLoaderService.loadExcelFile(any()))
         .thenThrow(new IllegalArgumentException("Invalid input"));
 
     ValidationRequest request = new ValidationRequest("", "config.yml", false);

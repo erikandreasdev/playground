@@ -1,18 +1,18 @@
 package com.example.demo.resource;
 
 import java.io.IOException;
-import java.net.MalformedURLException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.ResourceLoader;
-import org.springframework.core.io.UrlResource;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 
-/** Service to load resources from filesystem, classpath or web. */
+/**
+ * Service to load Excel files and mapping configurations from fixed classpath directories.
+ *
+ * <p>Excel files are loaded from: {@code classpath:excel/}
+ *
+ * <p>Mapping YAML files are loaded from: {@code classpath:excel/mappings/}
+ */
 @Service
 public class ResourceLoaderService {
 
@@ -28,94 +28,51 @@ public class ResourceLoaderService {
   }
 
   /**
-   * Loads a resource from the given path or filename. Supports searching in: 1. Web (if URL
-   * provided) 2. Classpath 3. Filesystem (absolute or relative)
+   * Loads an Excel file from the fixed directory {@code classpath:excel/}.
    *
-   * @param source the file path, URL, or filename
+   * @param filename name of the Excel file (e.g., "customers.xlsx")
    * @return the loaded resource information
-   * @throws IllegalArgumentException if resource cannot be loaded or found
+   * @throws IllegalArgumentException if filename is null or empty
+   * @throws com.example.demo.exception.ResourceNotFoundException if file not found
    */
-  public LoadedResource loadResource(String source) {
-    if (source == null || source.isBlank()) {
-      throw new IllegalArgumentException("Source must not be null or empty");
+  public LoadedResource loadExcelFile(String filename) {
+    if (filename == null || filename.isBlank()) {
+      throw new IllegalArgumentException("Filename must not be null or empty");
     }
 
-    // 1. Try as Web Resource (URL)
-    if (source.startsWith("http://") || source.startsWith("https://")) {
-      return loadFromWeb(source);
+    String path = "classpath:excel/" + filename;
+    Resource resource = resourceLoader.getResource(path);
+
+    if (!resource.exists()) {
+      throw new com.example.demo.exception.ResourceNotFoundException(
+          "Excel file not found: " + filename + " (expected in classpath:excel/)");
     }
 
-    // 2. Try as Classpath Resource
-    // Try with "classpath:" prefix explicitly first, or if it looks like a
-    // classpath path
-    Resource cpResource = resourceLoader.getResource("classpath:" + source);
-    if (cpResource.exists()) {
-      return loadFromSpringResource(cpResource, source, SourceType.CLASSPATH);
-    }
-    // Also try without prefix if the resourceLoader defaults to classpath (standard
-    // behavior)
-    Resource rawResource = resourceLoader.getResource(source);
-    if (rawResource.exists() && isClasspathResource(rawResource)) {
-      return loadFromSpringResource(rawResource, source, SourceType.CLASSPATH);
-    }
-
-    // 3. Try as Filesystem Resource
-    // Absolute
-    Path fsPath = Paths.get(source);
-    if (fsPath.isAbsolute() && Files.exists(fsPath)) {
-      return loadFromFileSystem(fsPath);
-    }
-    // Relative
-    Path relativeFsPath = Paths.get(".").resolve(source).normalize();
-    if (Files.exists(relativeFsPath)) {
-      return loadFromFileSystem(relativeFsPath);
-    }
-
-    throw new com.example.demo.exception.ResourceNotFoundException("Resource not found: " + source);
+    return loadFromSpringResource(resource, filename, SourceType.CLASSPATH);
   }
 
-  private boolean isClasspathResource(Resource resource) {
-    try {
-      return resource.getURL().getProtocol().equals("jar")
-          || resource.getURL().getProtocol().equals("file")
-              && resource.getDescription().contains("class path resource");
-    } catch (IOException e) {
-      return false;
+  /**
+   * Loads a mapping YAML file from the fixed directory {@code classpath:excel/mappings/}.
+   *
+   * @param filename name of the mapping file (e.g., "customer-validation.yml")
+   * @return the loaded resource information
+   * @throws IllegalArgumentException if filename is null or empty
+   * @throws com.example.demo.exception.ResourceNotFoundException if file not found
+   */
+  public LoadedResource loadMappingFile(String filename) {
+    if (filename == null || filename.isBlank()) {
+      throw new IllegalArgumentException("Filename must not be null or empty");
     }
-  }
 
-  private LoadedResource loadFromWeb(String url) {
-    try {
-      Resource resource = new UrlResource(url);
-      if (resource.exists() && resource.isReadable()) {
-        long size = resource.contentLength(); // Network call!
-        String filename = resource.getFilename();
-        if (filename == null) {
-          filename = "unknown";
-        }
-        return new LoadedResource(
-            filename, size, SourceType.WEB, MediaType.APPLICATION_OCTET_STREAM, resource);
-      } else {
-        throw new com.example.demo.exception.ResourceNotFoundException(
-            "Web resource not found or unreadable: " + url);
-      }
-    } catch (MalformedURLException e) {
-      throw new IllegalArgumentException("Invalid URL: " + url, e);
-    } catch (IOException e) {
-      throw new RuntimeException("Failed to load web resource: " + url, e);
-    }
-  }
+    String path = "classpath:excel/mappings/" + filename;
+    Resource resource = resourceLoader.getResource(path);
 
-  private LoadedResource loadFromFileSystem(Path path) {
-    try {
-      long size = Files.size(path);
-      String filename = path.getFileName().toString();
-      Resource resource = new FileSystemResource(path);
-      return new LoadedResource(
-          filename, size, SourceType.FILESYSTEM, MediaType.APPLICATION_OCTET_STREAM, resource);
-    } catch (IOException e) {
-      throw new RuntimeException("Failed to read file attributes: " + path, e);
+    if (!resource.exists()) {
+      throw new com.example.demo.exception.ResourceNotFoundException(
+          "Mapping file not found: " + filename + " (expected in classpath:excel/mappings/)");
     }
+
+    return loadFromSpringResource(resource, filename, SourceType.CLASSPATH);
   }
 
   private LoadedResource loadFromSpringResource(
