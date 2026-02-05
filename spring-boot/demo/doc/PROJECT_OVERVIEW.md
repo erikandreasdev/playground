@@ -1,30 +1,30 @@
 # Spring Boot Excel Validation & Import System
 
-**Version:** 1.0.0  
-**Last Updated:** 2026-02-04  
-**Java Version:** 21  
+**Version:** 2.0.0
+**Last Updated:** 2026-02-05
+**Java Version:** 21
 **Spring Boot Version:** 3.5.10
 
 ---
 
-## 📋 Table of Contents
+## Table of Contents
 
-1. [Project Overview](#-project-overview)
-2. [Architecture](#-architecture)
-3. [Core Capabilities](#-core-capabilities)
-4. [System Components](#-system-components)
-5. [Data Flow](#-data-flow)
-6. [Database Schema](#-database-schema)
-7. [Configuration System](#-configuration-system)
-8. [API Endpoints](#-api-endpoints)
-9. [Validation Engine](#-validation-engine)
-10. [Persistence Mechanism](#-persistence-mechanism)
-11. [Running the Application](#-running-the-application)
-12. [Development Standards](#-development-standards)
+1. [Project Overview](#project-overview)
+2. [Architecture](#architecture)
+3. [Core Capabilities](#core-capabilities)
+4. [System Components](#system-components)
+5. [Data Flow](#data-flow)
+6. [Database Schema](#database-schema)
+7. [Configuration System](#configuration-system)
+8. [API Endpoints](#api-endpoints)
+9. [Validation Engine](#validation-engine)
+10. [Persistence Mechanism](#persistence-mechanism)
+11. [Running the Application](#running-the-application)
+12. [Development Standards](#development-standards)
 
 ---
 
-## 🎯 Project Overview
+## Project Overview
 
 This Spring Boot application is a **configurable Excel validation and import system** designed to validate and persist Excel data into an Oracle database using YAML-driven configuration. The system enforces data integrity through comprehensive validation rules, data transformations, and foreign key reference checking (dbLookup).
 
@@ -35,115 +35,157 @@ This Spring Boot application is a **configurable Excel validation and import sys
 - **Type-Safe Validation**: Support for multiple data types (STRING, NUMBER, DECIMAL, DATE, EMAIL, UUID, BOOLEAN)
 - **Foreign Key Validation**: Database lookup (dbLookup) validates referential integrity before persistence
 - **Flexible Persistence**: Supports both dry-run (validation only) and upsert operations
-- **Comprehensive Reporting**: Detailed validation reports with metrics and execution time
+- **Comprehensive Reporting**: Detailed validation reports with metrics
 
 ---
 
-## 🏗️ Architecture
+## Architecture
 
 ### Hexagonal Architecture (Ports & Adapters)
 
 The project follows hexagonal architecture with clear layering:
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│                      REST Layer (Adapters)                   │
-│  ┌─────────────────────────────────────────────────────┐    │
-│  │  ExcelValidationController                          │    │
-│  │  - GET/POST /api/excel/validate                     │    │
-│  │  - GlobalExceptionHandler                           │    │
-│  └─────────────────────────────────────────────────────┘    │
-└──────────────────────────┬──────────────────────────────────┘
-                           │
-┌──────────────────────────┼──────────────────────────────────┐
-│                   Application Services                       │
-│  ┌────────────────────┐  ┌────────────────────────────┐     │
-│  │ResourceLoaderService│ │ExcelValidationService      │     │
-│  │- Load from classpath│ │- Orchestrates validation   │     │
-│  │- Load from filesystem│ │- Applies transformations  │     │
-│  │- Load from web      │  │- Enforces rules           │     │
-│  └────────────────────┘  └────────────────────────────┘     │
-│                                                               │
-│  ┌───────────────────────────────────────────────────────┐  │
-│  │  ExcelPersistenceService                              │  │
-│  │  - Maps Excel columns to DB columns                   │  │
-│  │  - Delegates to JdbcDatabaseAdapter                   │  │
-│  └───────────────────────────────────────────────────────┘  │
-└──────────────────────────┬──────────────────────────────────┘
-                           │
-┌──────────────────────────┼──────────────────────────────────┐
-│                      Domain Layer                            │
-│  ┌─────────────────────────────────────────────────────┐    │
-│  │  Domain Models (Records & Enums)                    │    │
-│  │  - ValidationConfig, ValidationReport               │    │
-│  │  - SheetConfig, ColumnConfig, ValidationMetrics     │    │
-│  │  - DataType, TransformationType, ValidationRule     │    │
-│  │  - PersistenceConfig, DatabaseMapping, DbLookup     │    │
-│  └─────────────────────────────────────────────────────┘    │
-│                                                               │
-│  ┌─────────────────────────────────────────────────────┐    │
-│  │  Validation Services                                 │    │
-│  │  - CellTransformer (TRIM, UPPERCASE, LOWERCASE...)  │    │
-│  │  - CellValueValidator (NOT_EMPTY, EMAIL_FORMAT...)  │    │
-│  │  - DbLookupValidator (Foreign key validation)       │    │
-│  └─────────────────────────────────────────────────────┘    │
-└──────────────────────────┬──────────────────────────────────┘
-                           │
-┌──────────────────────────┼──────────────────────────────────┐
-│                   Infrastructure Layer                       │
-│  ┌─────────────────────────────────────────────────────┐    │
-│  │  JdbcDatabaseAdapter                                 │    │
-│  │  - Executes batch MERGE/INSERT operations           │    │
-│  │  - Oracle SQL generation                             │    │
-│  │  - Primary key-based upsert logic                    │    │
-│  └─────────────────────────────────────────────────────┘    │
-│                                                               │
-│  ┌─────────────────────────────────────────────────────┐    │
-│  │  Apache POI                                          │    │
-│  │  - Excel file reading (XLSX)                         │    │
-│  └─────────────────────────────────────────────────────┘    │
-└───────────────────────────────────────────────────────────────┘
++-----------------------------------------------------------------------+
+|                        ADAPTERS (Inbound)                              |
+|  +------------------------------------------------------------------+ |
+|  |  adapters/inbound/rest/                                          | |
+|  |  - ExcelValidationController (GET/POST /api/excel/validate)      | |
+|  |  - ValidationRequest (DTO)                                        | |
+|  |  - GlobalExceptionHandler                                         | |
+|  +------------------------------------------------------------------+ |
++-----------------------------------+-----------------------------------+
+                                    |
+                                    v
++-----------------------------------------------------------------------+
+|                          CORE (Business Logic)                         |
+|  +------------------------------------------------------------------+ |
+|  |  core/ports/inbound/                                             | |
+|  |  - ExcelValidationPort (interface for validation use case)       | |
+|  +------------------------------------------------------------------+ |
+|                                    |                                   |
+|  +------------------------------------------------------------------+ |
+|  |  core/internal/usecases/                                         | |
+|  |  - ValidateExcelUseCase (orchestrates validation workflow)       | |
+|  +------------------------------------------------------------------+ |
+|                                    |                                   |
+|  +------------------------------------------------------------------+ |
+|  |  core/internal/services/                                         | |
+|  |  - ExcelSheetProcessorService (sheet-level processing)           | |
+|  |  - ExcelRowValidatorService (row-level validation)               | |
+|  |  - CellTransformerService (TRIM, UPPERCASE, LOWERCASE)           | |
+|  |  - CellValidatorService (NOT_EMPTY, EMAIL_FORMAT, type checks)   | |
+|  |  - DbLookupService (foreign key validation)                      | |
+|  |  - RowOperationService (computed columns)                        | |
+|  |  - ExcelPersistenceService (maps Excel to DB columns)            | |
+|  +------------------------------------------------------------------+ |
+|                                    |                                   |
+|  +------------------------------------------------------------------+ |
+|  |  core/internal/domain/                                           | |
+|  |  - config/ (ValidationConfig, SheetConfig, ColumnConfig, etc.)   | |
+|  |  - result/ (ValidationReport, SheetMetrics, PersistenceResult)   | |
+|  |  - enums/ (DataType, ValidationRule, TransformationType, etc.)   | |
+|  +------------------------------------------------------------------+ |
+|                                    |                                   |
+|  +------------------------------------------------------------------+ |
+|  |  core/ports/outbound/                                            | |
+|  |  - DatabasePort (interface for DB operations)                    | |
+|  |  - ResourceLoaderPort (interface for resource loading)           | |
+|  |  - ConfigLoaderPort (interface for config parsing)               | |
+|  +------------------------------------------------------------------+ |
++-----------------------------------+-----------------------------------+
+                                    |
+                                    v
++-----------------------------------------------------------------------+
+|                        ADAPTERS (Outbound)                             |
+|  +------------------------------------------------------------------+ |
+|  |  adapters/outbound/persistence/                                  | |
+|  |  - JdbcDatabaseAdapter (implements DatabasePort)                 | |
+|  |    - Oracle MERGE/INSERT operations                              | |
+|  |    - Batch processing                                            | |
+|  +------------------------------------------------------------------+ |
+|  +------------------------------------------------------------------+ |
+|  |  adapters/outbound/resource/                                     | |
+|  |  - SpringResourceLoaderAdapter (implements ResourceLoaderPort)   | |
+|  |    - Classpath, filesystem, web resource loading                 | |
+|  |  - YamlConfigLoaderAdapter (implements ConfigLoaderPort)         | |
+|  |    - YAML parsing with Jackson                                   | |
+|  +------------------------------------------------------------------+ |
++-----------------------------------------------------------------------+
 ```
 
 ### Package Structure
 
 ```
 com.example.demo
-├── DemoApplication.java          # Main entry point
-├── rest/                          # REST controllers and DTOs
-│   ├── ExcelValidationController.java
-│   ├── ValidationRequest.java
-│   └── GlobalExceptionHandler.java
-├── service/                       # Application services
-│   ├── ExcelValidationService.java      # Main validation orchestrator
-│   ├── ExcelPersistenceService.java     # Persistence orchestrator
-│   └── JdbcDatabaseAdapter.java         # Database operations
-├── validation/                    # Domain validation services
-│   ├── CellTransformer.java
-│   ├── CellValueValidator.java
-│   └── DbLookupValidator.java
-├── domain/                        # Domain models (records & enums)
-│   ├── ValidationConfig.java     # Root config structure
-│   ├── ValidationReport.java     # Validation result
-│   ├── SheetConfig.java, ColumnConfig.java
-│   ├── DataType.java, TransformationType.java
-│   ├── ValidationRule.java, DbLookup.java
-│   ├── PersistenceConfig.java, DatabaseMapping.java
-│   └── ValidationMetrics.java, SheetMetrics.java
-├── resource/                      # Resource loading
-│   ├── ResourceLoaderService.java
-│   ├── LoadedResource.java
-│   └── SourceType.java
-├── util/                          # Utilities
-│   └── ExcelGenerator.java       # Generates test Excel files
-└── exception/                     # Custom exceptions
-    ├── ResourceNotFoundException.java
-    └── MappingException.java
+├── DemoApplication.java                    # Main entry point
+├── adapters/
+│   ├── inbound/
+│   │   └── rest/                           # REST API controllers
+│   │       ├── ExcelValidationController.java
+│   │       ├── ValidationRequest.java
+│   │       └── GlobalExceptionHandler.java
+│   └── outbound/
+│       ├── persistence/                    # Database adapter
+│       │   └── JdbcDatabaseAdapter.java
+│       └── resource/                       # Resource loading adapters
+│           ├── SpringResourceLoaderAdapter.java
+│           └── YamlConfigLoaderAdapter.java
+├── config/
+│   └── BeanConfiguration.java              # Spring bean wiring
+├── core/
+│   ├── exceptions/                         # Domain exceptions
+│   │   ├── ResourceNotFoundException.java
+│   │   └── MappingException.java
+│   ├── internal/
+│   │   ├── domain/
+│   │   │   ├── config/                     # Configuration domain objects
+│   │   │   │   ├── ValidationConfig.java
+│   │   │   │   ├── SheetConfig.java
+│   │   │   │   ├── ColumnConfig.java
+│   │   │   │   ├── PersistenceConfig.java
+│   │   │   │   ├── DatabaseMapping.java
+│   │   │   │   ├── DbLookup.java
+│   │   │   │   ├── Operation.java
+│   │   │   │   └── RowOperation.java
+│   │   │   ├── result/                     # Result domain objects
+│   │   │   │   ├── ValidationReport.java
+│   │   │   │   ├── ValidationMetrics.java
+│   │   │   │   ├── SheetMetrics.java
+│   │   │   │   ├── PersistenceResult.java
+│   │   │   │   ├── RowValidationResult.java
+│   │   │   │   └── FileMetadata.java
+│   │   │   └── enums/                      # Domain enumerations
+│   │   │       ├── DataType.java
+│   │   │       ├── TransformationType.java
+│   │   │       ├── ValidationRule.java
+│   │   │       ├── OperationType.java
+│   │   │       └── ValidationStatus.java
+│   │   ├── services/                       # Domain services
+│   │   │   ├── ExcelSheetProcessorService.java
+│   │   │   ├── ExcelRowValidatorService.java
+│   │   │   ├── CellTransformerService.java
+│   │   │   ├── CellValidatorService.java
+│   │   │   ├── DbLookupService.java
+│   │   │   ├── RowOperationService.java
+│   │   │   └── ExcelPersistenceService.java
+│   │   ├── usecases/                       # Use case implementations
+│   │   │   └── ValidateExcelUseCase.java
+│   │   └── valueobjects/                   # Value objects
+│   │       ├── LoadedResource.java
+│   │       └── SourceType.java
+│   └── ports/
+│       ├── inbound/                        # Inbound port interfaces
+│       │   └── ExcelValidationPort.java
+│       └── outbound/                       # Outbound port interfaces
+│           ├── DatabasePort.java
+│           ├── ResourceLoaderPort.java
+│           └── ConfigLoaderPort.java
 ```
 
 ---
 
-## 🚀 Core Capabilities
+## Core Capabilities
 
 ### 1. **Excel Validation**
 - Validates Excel file structure (sheet names, column headers)
@@ -151,6 +193,7 @@ com.example.demo
 - Validates required fields and allowed values
 - Applies cell transformations before validation (TRIM, UPPERCASE, LOWERCASE)
 - Checks foreign key references via database lookups (dbLookup)
+- Supports computed columns via row operations (CONCATENATE, REPLACE, SUBSTRING)
 
 ### 2. **Data Persistence**
 - Supports two modes:
@@ -165,26 +208,23 @@ com.example.demo
   - Sheet and column structure
   - Validation rules per column
   - Data transformations
+  - Row operations (computed columns)
   - Database table mappings
   - Foreign key relationships (dbLookup)
 
-### 4. **Excel Generation**
-- Utility to generate realistic test data using Datafaker
-- Supports multiple faker types (email, firstname, product_name, etc.)
-- Maintains foreign key relationships in generated data
-
 ---
 
-## 🔧 System Components
+## System Components
 
-### REST Layer
+### Inbound Adapters (REST Layer)
 
 #### **ExcelValidationController**
+- **Location**: `adapters/inbound/rest/ExcelValidationController.java`
 - **Endpoint**: `GET/POST /api/excel/validate`
 - **Responsibilities**:
   - Accept validation requests (query params or JSON body)
-  - Load Excel and config resources
-  - Delegate to validation service
+  - Load Excel and config resources via ports
+  - Delegate to validation use case
   - Return structured validation report
 
 **Example Usage:**
@@ -196,120 +236,172 @@ GET /api/excel/validate?excelFilename=examples/excel/ecommerce-data.xlsx&validat
 GET /api/excel/validate?excelFilename=examples/excel/ecommerce-data.xlsx&validationsFilename=validations/ecommerce-validation.yml&persist=true
 ```
 
-### Application Services
+### Core - Use Cases
 
-#### **ExcelValidationService**
-Core validation orchestrator that:
-1. Loads and parses Excel files using Apache POI
-2. Validates sheet and column structure against YAML config
-3. Processes each row:
-   - Applies cell transformations
-   - Validates data types and rules
-   - Performs database lookups (dbLookup)
-4. Collects valid rows and error messages
-5. Generates validation report with metrics
+#### **ValidateExcelUseCase**
+- **Location**: `core/internal/usecases/ValidateExcelUseCase.java`
+- **Implements**: `ExcelValidationPort`
+- **Responsibilities**:
+  1. Load YAML configuration via `ConfigLoaderPort`
+  2. Open Excel workbook
+  3. Process each sheet via `ExcelSheetProcessorService`
+  4. Aggregate metrics and build `ValidationReport`
+
+### Core - Domain Services
+
+#### **ExcelSheetProcessorService**
+- **Location**: `core/internal/services/ExcelSheetProcessorService.java`
+- Processes individual Excel sheets
+- Builds header column mappings
+- Validates sheet structure
+- Delegates row validation to `ExcelRowValidatorService`
+- Coordinates persistence via `ExcelPersistenceService`
+
+#### **ExcelRowValidatorService**
+- **Location**: `core/internal/services/ExcelRowValidatorService.java`
+- Four-phase row validation:
+  1. **Transform & Extract**: Apply transformations, extract cell values
+  2. **Compute Columns**: Execute row operations for computed columns
+  3. **Validate**: Run validation rules, check foreign keys
+  4. **Type Conversion**: Convert strings to target types
+
+#### **CellTransformerService**
+- **Location**: `core/internal/services/CellTransformerService.java`
+- Applies transformations to cell values before validation:
+  - `TRIM`: Remove leading/trailing whitespace
+  - `UPPERCASE`: Convert to uppercase
+  - `LOWERCASE`: Convert to lowercase
+
+#### **CellValidatorService**
+- **Location**: `core/internal/services/CellValidatorService.java`
+- Validates cell values against rules:
+  - `NOT_NULL`, `NOT_EMPTY`
+  - `EMAIL_FORMAT`
+  - `allowedValues` (enum validation)
+  - Type-specific validation (NUMBER, DATE, UUID, etc.)
+
+#### **DbLookupService**
+- **Location**: `core/internal/services/DbLookupService.java`
+- Validates foreign key references:
+  - Queries database to check if value exists
+  - Supports single-column and composite-key lookups
+  - Returns specific error message if reference not found
+
+#### **RowOperationService**
+- **Location**: `core/internal/services/RowOperationService.java`
+- Executes row-level operations to compute new columns:
+  - `CONCATENATE`: Join multiple columns
+  - `REPLACE`: Replace patterns
+  - `SUBSTRING`: Extract substring
+  - `UPPERCASE`, `LOWERCASE`, `TRIM`
 
 #### **ExcelPersistenceService**
-Handles data persistence:
+- **Location**: `core/internal/services/ExcelPersistenceService.java`
 - Maps Excel columns to database columns
-- Delegates to JdbcDatabaseAdapter for batch operations
-- Returns persistence result (success/failure, row count)
+- Delegates to `DatabasePort` for batch operations
+
+### Outbound Adapters
 
 #### **JdbcDatabaseAdapter**
-Low-level database operations:
-- Generates Oracle SQL (MERGE statements)
-- Executes batch operations using Spring JdbcTemplate
-- Handles transaction management
+- **Location**: `adapters/outbound/persistence/JdbcDatabaseAdapter.java`
+- **Implements**: `DatabasePort`
+- Low-level database operations:
+  - Generates Oracle SQL (MERGE statements)
+  - Executes batch operations using Spring JdbcTemplate
+  - Performs database lookups for foreign key validation
 
-#### **ResourceLoaderService**
-Flexible resource loading from:
-- Classpath (`classpath:examples/excel/file.xlsx`)
-- Filesystem (absolute or relative paths)
-- Web (HTTP/HTTPS URLs)
+#### **SpringResourceLoaderAdapter**
+- **Location**: `adapters/outbound/resource/SpringResourceLoaderAdapter.java`
+- **Implements**: `ResourceLoaderPort`
+- Flexible resource loading from:
+  - Classpath (`classpath:examples/excel/file.xlsx`)
+  - Filesystem (absolute or relative paths)
+  - Web (HTTP/HTTPS URLs)
 
-Returns `LoadedResource` with metadata (filename, size, source type, media type)
+#### **YamlConfigLoaderAdapter**
+- **Location**: `adapters/outbound/resource/YamlConfigLoaderAdapter.java`
+- **Implements**: `ConfigLoaderPort`
+- Parses YAML validation configuration using Jackson
 
-### Validation Services
+### Ports (Interfaces)
 
-#### **CellTransformer**
-Applies transformations to cell values before validation:
-- `TRIM`: Remove leading/trailing whitespace
-- `UPPERCASE`: Convert to uppercase
-- `LOWERCASE`: Convert to lowercase
-- `CAPITALIZE_WORDS`: Capitalize first letter of each word
-- And more...
+#### **ExcelValidationPort** (Inbound)
+- **Location**: `core/ports/inbound/ExcelValidationPort.java`
+- Defines the contract for Excel validation use case
+- Implemented by `ValidateExcelUseCase`
 
-#### **CellValueValidator**
-Validates cell values against rules:
-- `NOT_NULL`, `NOT_EMPTY`
-- `EMAIL_FORMAT`
-- `allowedValues` (enum validation)
-- Type-specific validation (NUMBER, DATE, UUID, etc.)
+#### **DatabasePort** (Outbound)
+- **Location**: `core/ports/outbound/DatabasePort.java`
+- Defines database operations:
+  - `persist()`: Batch insert/upsert
+  - `lookup()`: Single-column foreign key check
+  - `lookupComposite()`: Composite-key foreign key check
 
-#### **DbLookupValidator**
-Validates foreign key references:
-- Queries database to check if value exists
-- Returns specific error message if reference not found
-- Prevents orphaned foreign key data
+#### **ResourceLoaderPort** (Outbound)
+- **Location**: `core/ports/outbound/ResourceLoaderPort.java`
+- Defines resource loading contract
+- Returns `LoadedResource` with metadata
+
+#### **ConfigLoaderPort** (Outbound)
+- **Location**: `core/ports/outbound/ConfigLoaderPort.java`
+- Defines configuration parsing contract
+- Returns `ValidationConfig` domain object
 
 ---
 
-## 🔄 Data Flow
+## Data Flow
 
 ### Validation Flow (persist=false)
 
 ```
-1. HTTP Request → ExcelValidationController
-           ↓
-2. Load Excel File → ResourceLoaderService
-           ↓
-3. Load YAML Config → ResourceLoaderService
-           ↓
-4. Parse Config → Jackson (YAML → ValidationConfig)
-           ↓
-5. Validate Structure → ExcelValidationService
-   - Check sheet names
-   - Check column headers
-           ↓
-6. Process Each Row → For each data row:
-   a. Extract cell values
-   b. Apply transformations (CellTransformer)
-   c. Validate data types (CellValueValidator)
-   d. Check validation rules (CellValueValidator)
-   e. Perform dbLookup (DbLookupValidator)
-   f. Collect valid rows & errors
-           ↓
-7. Generate Report → ValidationReport
-   - File metadata
-   - Sheet metrics (total rows, valid, invalid)
-   - Error messages
-   - Execution time
-           ↓
-8. HTTP Response → JSON ValidationReport
+1. HTTP Request -> ExcelValidationController
+           |
+2. Load Resources via ResourceLoaderPort
+           |
+3. Delegate to ExcelValidationPort.validate()
+           |
+4. ValidateExcelUseCase orchestrates:
+   a. Load config via ConfigLoaderPort
+   b. Open Excel workbook
+   c. For each sheet -> ExcelSheetProcessorService:
+      - Build header map
+      - Validate structure
+      - For each row -> ExcelRowValidatorService:
+        i.   Apply transformations (CellTransformerService)
+        ii.  Execute row operations (RowOperationService)
+        iii. Validate cells (CellValidatorService)
+        iv.  Check foreign keys (DbLookupService)
+        v.   Convert types
+      - Collect valid rows and errors
+           |
+5. Build ValidationReport with metrics
+           |
+6. HTTP Response -> JSON ValidationReport
 ```
 
 ### Persistence Flow (persist=true)
 
 ```
-Steps 1-6: Same as validation flow
-           ↓
-7. Map to DB → ExcelPersistenceService
-   - Map Excel columns to DB columns
-   - Apply column name mappings
-           ↓
-8. Batch Persist → JdbcDatabaseAdapter
-   - Generate MERGE SQL statements
-   - Execute batch operation
-   - Return row count
-           ↓
-9. Generate Report → ValidationReport + PersistenceResult
-           ↓
-10. HTTP Response → JSON ValidationReport
+Steps 1-4: Same as validation flow
+           |
+5. For each sheet with valid rows:
+   ExcelPersistenceService:
+   a. Map Excel columns to DB columns
+   b. Delegate to DatabasePort.persist()
+           |
+6. JdbcDatabaseAdapter:
+   a. Generate MERGE SQL
+   b. Execute batch operation
+   c. Return PersistenceResult
+           |
+7. Build ValidationReport with persistence results
+           |
+8. HTTP Response -> JSON ValidationReport
 ```
 
 ---
 
-## 🗄️ Database Schema
+## Database Schema
 
 ### E-Commerce Schema (Oracle)
 
@@ -321,61 +413,26 @@ CATEGORIES (category_id PK, category_name, description)
 CUSTOMERS (customer_id PK, first_name, last_name, email, phone, registration_date, status)
 
 -- Child Tables (with foreign keys)
-PRODUCTS (product_id PK, product_name, category_id FK→CATEGORIES, price, stock_quantity, rating, is_active)
-ORDERS (order_id PK, customer_id FK→CUSTOMERS, order_date, total_amount, status, shipping_address)
+PRODUCTS (product_id PK, product_name, category_id FK->CATEGORIES, price, stock_quantity, rating, is_active)
+ORDERS (order_id PK, customer_id FK->CUSTOMERS, order_date, total_amount, status, shipping_address)
 
 -- Grandchild Table (multiple foreign keys)
-ORDER_ITEMS (order_item_id PK, order_id FK→ORDERS, product_id FK→PRODUCTS, quantity, unit_price, subtotal)
-```
-
-### Entity Relationship Diagram
-
-```
-┌────────────┐
-│ CATEGORIES │
-│────────────│
-│ category_id│◄────┐
-│ name       │     │
-└────────────┘     │
-                   │ FK
-               ┌───┴──────┐
-               │ PRODUCTS │
-               │──────────│
-               │product_id│◄────┐
-               │category  │     │
-               │price     │     │
-               └──────────┘     │ FK
-                                │
-┌──────────┐              ┌────┴─────────┐
-│CUSTOMERS │              │ ORDER_ITEMS  │
-│──────────│              │──────────────│
-│customer  │◄────┐        │order_item_id │
-│first_name│     │        │order_id   FK─┼──┐
-│email     │     │ FK     │product_id FK─┘  │
-└──────────┘     │        │quantity         │
-                 │        │unit_price       │
-            ┌────┴───┐    └─────────────────┘
-            │ ORDERS │
-            │────────│
-            │order_id│
-            │customer│
-            │date    │
-            └────────┘
+ORDER_ITEMS (order_item_id PK, order_id FK->ORDERS, product_id FK->PRODUCTS, quantity, unit_price, subtotal)
 ```
 
 ### Load Order (Critical!)
 
 When loading data with `persist=true`, **always follow this order** to maintain referential integrity:
 
-1. ✅ **categories** (no dependencies)
-2. ✅ **customers** (no dependencies)
-3. ⚠️  **products** (requires categories)
-4. ⚠️  **orders** (requires customers)
-5. ⚠️  **order_items** (requires orders AND products)
+1. **categories** (no dependencies)
+2. **customers** (no dependencies)
+3. **products** (requires categories)
+4. **orders** (requires customers)
+5. **order_items** (requires orders AND products)
 
 ---
 
-## ⚙️ Configuration System
+## Configuration System
 
 ### YAML Structure
 
@@ -401,6 +458,12 @@ sheets:
           table: "REFERENCED_TABLE"
           column: "referenced_column"
           errorMessage: "Custom error message"
+    rowOperations:               # Optional: Computed columns
+      - targetColumn: "Full Name"
+        operations:
+          - type: CONCATENATE
+            sourceColumns: ["First Name", "Last Name"]
+            separator: " "
     persistence:
       tableName: "DB_TABLE"
       upsert: true
@@ -410,52 +473,20 @@ sheets:
           dbColumn: "db_column"
 ```
 
-### Example: Products Configuration
-
-```yaml
-- name: "Products"
-  columns:
-    - name: "Product ID"
-      required: true
-      rules:
-        - NOT_EMPTY
-    - name: "Category ID"
-      required: true
-      rules:
-        - NOT_EMPTY
-      dbLookup:
-        table: "CATEGORIES"
-        column: "category_id"
-        errorMessage: "Category ID does not exist. Please load categories first."
-    - name: "Price"
-      required: true
-      type: DECIMAL
-      rules:
-        - NOT_EMPTY
-  persistence:
-    tableName: "PRODUCTS"
-    upsert: true
-    primaryKey: "Product ID"
-    mappings:
-      - excelColumn: "Product ID"
-        dbColumn: "product_id"
-      - excelColumn: "Category ID"
-        dbColumn: "category_id"
-```
-
 ### Configuration Features
 
 1. **Data Types**: STRING, NUMBER, DECIMAL, DATE, EMAIL, UUID, BOOLEAN
-2. **Transformations**: TRIM, UPPERCASE, LOWERCASE, CAPITALIZE_WORDS, etc.
+2. **Transformations**: TRIM, UPPERCASE, LOWERCASE
 3. **Validation Rules**: NOT_NULL, NOT_EMPTY, EMAIL_FORMAT
 4. **Allowed Values**: Enum validation (list of permitted values)
 5. **DB Lookup**: Foreign key validation against existing database records
-6. **Persistence Mapping**: Excel column → Database column mapping
-7. **Upsert Support**: Primary key-based MERGE operations
+6. **Row Operations**: Computed columns (CONCATENATE, REPLACE, SUBSTRING, UPPERCASE, LOWERCASE, TRIM)
+7. **Persistence Mapping**: Excel column -> Database column mapping
+8. **Upsert Support**: Primary key-based MERGE operations
 
 ---
 
-## 🌐 API Endpoints
+## API Endpoints
 
 ### GET `/api/excel/validate`
 
@@ -471,30 +502,6 @@ Validates an Excel file using query parameters.
 curl "http://localhost:8080/api/excel/validate?excelFilename=examples/excel/ecommerce-data.xlsx&validationsFilename=validations/ecommerce-validation.yml&persist=true"
 ```
 
-**Response:**
-```json
-{
-  "filename": "ecommerce-data.xlsx",
-  "configFilename": "ecommerce-validation.yml",
-  "status": "VALID",
-  "sheetMetrics": [
-    {
-      "sheetName": "Categories",
-      "totalRows": 10,
-      "validRows": 10,
-      "invalidRows": 0,
-      "errors": []
-    }
-  ],
-  "totalErrors": 0,
-  "executionTime": "1.234 seconds",
-  "processingMetrics": {
-    "totalRowsProcessed": 10,
-    "totalRowsPersisted": 10
-  }
-}
-```
-
 ### POST `/api/excel/validate`
 
 Validates an Excel file using JSON request body.
@@ -508,11 +515,47 @@ Validates an Excel file using JSON request body.
 }
 ```
 
-**Response:** Same as GET endpoint
+**Response:**
+```json
+{
+  "status": "SUCCESS",
+  "excelMetadata": {
+    "filename": "ecommerce-data.xlsx",
+    "size": 12345,
+    "sourceType": "CLASSPATH"
+  },
+  "rulesMetadata": {
+    "filename": "ecommerce-validation.yml",
+    "size": 2048,
+    "sourceType": "CLASSPATH"
+  },
+  "globalMetrics": {
+    "totalRows": 100,
+    "validRows": 95,
+    "invalidRows": 5,
+    "persistedRows": 95
+  },
+  "sheetMetrics": [
+    {
+      "sheetName": "Categories",
+      "totalRows": 10,
+      "validRows": 10,
+      "invalidRows": 0,
+      "errors": [],
+      "persistence": {
+        "success": true,
+        "rowsAffected": 10,
+        "generatedSql": "MERGE INTO CATEGORIES..."
+      }
+    }
+  ],
+  "errors": []
+}
+```
 
 ---
 
-## ✅ Validation Engine
+## Validation Engine
 
 ### Supported Data Types
 
@@ -535,7 +578,6 @@ Applied to cell values **before** validation:
 | `TRIM` | Remove leading/trailing whitespace |
 | `UPPERCASE` | Convert to uppercase |
 | `LOWERCASE` | Convert to lowercase |
-| `CAPITALIZE_WORDS` | Capitalize first letter of each word |
 
 ### Validation Rules
 
@@ -545,6 +587,17 @@ Applied to cell values **before** validation:
 | `NOT_EMPTY` | Cell value must not be null/empty after trimming |
 | `EMAIL_FORMAT` | Must be valid email format |
 | `allowedValues` | Value must be in predefined list |
+
+### Row Operations (Computed Columns)
+
+| Operation | Description | Parameters |
+|-----------|-------------|------------|
+| `CONCATENATE` | Join values from multiple columns | sourceColumns, separator |
+| `REPLACE` | Replace pattern with replacement | pattern, replacement |
+| `SUBSTRING` | Extract substring | startIndex, endIndex |
+| `UPPERCASE` | Convert to uppercase | - |
+| `LOWERCASE` | Convert to lowercase | - |
+| `TRIM` | Remove whitespace | - |
 
 ### Foreign Key Validation (dbLookup)
 
@@ -565,7 +618,7 @@ dbLookup:
 
 ---
 
-## 💾 Persistence Mechanism
+## Persistence Mechanism
 
 ### Upsert Strategy
 
@@ -573,7 +626,7 @@ The system uses Oracle `MERGE` statements for efficient upsert operations:
 
 ```sql
 MERGE INTO PRODUCTS target
-USING (SELECT ? AS product_id, ? AS product_name, ? AS category_id FROM DUAL) source
+USING (SELECT :product_id AS product_id, :product_name AS product_name, :category_id AS category_id FROM DUAL) source
 ON (target.product_id = source.product_id)
 WHEN MATCHED THEN
   UPDATE SET
@@ -599,7 +652,7 @@ When `persist=false`:
 
 ---
 
-## 🏃 Running the Application
+## Running the Application
 
 ### Prerequisites
 
@@ -627,38 +680,9 @@ mvn clean verify
 mvn spring-boot:run
 ```
 
-### Generate Test Data
-
-```bash
-# Generate ecommerce-data.xlsx with 80 rows
-mvn exec:java \
-    -Dexec.mainClass="com.example.demo.util.ExcelGeneratorTest" \
-    -Dexec.classpathScope=test \
-    -Dcheckstyle.skip=true
-```
-
-### Load E-Commerce Data (Complete Flow)
-
-```bash
-# 1. Categories (parent)
-curl "http://localhost:8080/api/excel/validate?excelFilename=examples/excel/ecommerce-data.xlsx&validationsFilename=validations/ecommerce-validation.yml&persist=true"
-
-# 2. Customers (parent)
-curl "http://localhost:8080/api/excel/validate?excelFilename=examples/excel/ecommerce-data.xlsx&validationsFilename=validations/ecommerce-validation.yml&persist=true"
-
-# 3. Products (child of categories)
-curl "http://localhost:8080/api/excel/validate?excelFilename=examples/excel/ecommerce-data.xlsx&validationsFilename=validations/ecommerce-validation.yml&persist=true"
-
-# 4. Orders (child of customers)
-curl "http://localhost:8080/api/excel/validate?excelFilename=examples/excel/ecommerce-data.xlsx&validationsFilename=validations/ecommerce-validation.yml&persist=true"
-
-# 5. Order Items (child of orders & products)
-curl "http://localhost:8080/api/excel/validate?excelFilename=examples/excel/ecommerce-data.xlsx&validationsFilename=validations/ecommerce-validation.yml&persist=true"
-```
-
 ---
 
-## 📐 Development Standards
+## Development Standards
 
 ### Code Quality Gates
 
@@ -704,27 +728,32 @@ mvn jacoco:report
 open target/site/jacoco/index.html
 
 # Run specific test
-mvn test -Dtest=ExcelValidationServiceTest
+mvn test -Dtest=ValidateExcelUseCaseTest
 ```
 
 ---
 
-## 📚 Additional Resources
-
-- [Validation Documentation](validation.md) - Legacy validation docs
-- [Resources README](../src/main/resources/README.md) - Detailed resource structure
-- [Database Schema](../init-db.sql) - Complete DDL with comments
-- [Bruno API Collections](../bruno/) - API test collections (if exists)
-
----
-
-## 🎓 Key Learnings & Design Decisions
+## Key Design Decisions
 
 ### Why Hexagonal Architecture?
 
 - **Testability**: Business logic isolated from frameworks
 - **Flexibility**: Easy to swap adapters (e.g., switch from Oracle to PostgreSQL)
 - **Maintainability**: Clear separation of concerns
+- **Dependency Inversion**: Core depends on abstractions (ports), not implementations
+
+### Why Ports and Adapters?
+
+- **Inbound Ports**: Define what the application CAN DO (use cases)
+- **Outbound Ports**: Define what the application NEEDS (external services)
+- **Adapters**: Implement the technical details (REST, JDBC, YAML parsing)
+
+### Why DDD Principles?
+
+- **Domain Objects**: Immutable records representing business concepts
+- **Value Objects**: Encapsulate related data (LoadedResource, SourceType)
+- **Domain Services**: Business logic without framework dependencies
+- **Use Cases**: Application-level orchestration
 
 ### Why YAML Configuration?
 
@@ -732,22 +761,14 @@ mvn test -Dtest=ExcelValidationServiceTest
 - **Version Control**: Configuration changes tracked in git
 - **Flexibility**: No code changes required for new validation scenarios
 
-### Why dbLookup?
+---
 
-- **Data Integrity**: Prevents orphaned foreign key references
-- **Early Validation**: Catch errors before database constraints
-- **Better UX**: Clear error messages (e.g., "Category CAT-999 does not exist")
+## Additional Resources
 
-### Why Batch Operations?
-
-- **Performance**: Reduces database round-trips (100 rows → 1 batch instead of 100 inserts)
-- **Transaction Management**: All-or-nothing semantics
-- **Scalability**: Handles large Excel files efficiently
+- [Validation Documentation](validation.md) - Extending transformations and rules
+- [Resources README](../src/main/resources/README.md) - Resource structure
+- [Database Schema](../init-db.sql) - Complete DDL with comments
 
 ---
 
-## 📞 Contact & Support
-
-For questions or issues, please refer to the project repository or contact the development team.
-
-**Happy Validating! 🎉**
+**Happy Validating!**
